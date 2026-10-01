@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BrokerVault · Affordability Review</title>
+<style>
+  :root {
+    --y: #F5B700; --y-soft: #FFF3C4; --ink: #1C1C1C; --char: #2A2A2A; --muted: #6B6556;
+    --line: #E6DFC8; --bg: #FAFAF7; --card: #FFFFFF; --ok: #1E7B4A; --ok-soft: #E3F4EA;
+    --bad: #B42318; --bad-soft: #FDECEA;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--ink); font-size: 14px; }
+  header { background: var(--char); color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header .logo { background: var(--y); color: var(--ink); font-weight: 800; border-radius: 8px; padding: 6px 10px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header .who { margin-left: auto; font-size: 13px; color: #ddd; }
+  main { max-width: 1240px; margin: 0 auto; padding: 20px 24px 40px; display: grid; grid-template-columns: 300px 1fr 360px; gap: 18px; }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  h2 { font-size: 15px; margin: 0 0 12px; }
+  h3 { font-size: 13px; margin: 16px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  label { display: block; font-size: 12.5px; color: var(--muted); margin: 10px 0 4px; }
+  input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: #fff; color: var(--ink); }
+  input:focus, select:focus { outline: 2px solid var(--y); border-color: var(--y); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row2 > div { display: flex; flex-direction: column; justify-content: flex-end; }
+  .src { display: inline-block; font-size: 11px; background: var(--y-soft); color: #7A5A00; border-radius: 999px; padding: 1px 8px; margin-left: 6px; }
+  .docs { list-style: none; padding: 0; margin: 0; }
+  .docs li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #f0ece0; font-size: 13px; }
+  .docs li:last-child { border-bottom: none; }
+  .pill { margin-left: auto; font-size: 11px; border-radius: 999px; padding: 2px 8px; font-weight: 600; }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .pill.miss { background: var(--bad-soft); color: var(--bad); }
+  .docs button { border: 1px solid var(--line); background: #fff; border-radius: 6px; font-size: 11px; padding: 2px 6px; cursor: pointer; }
+  .progress { height: 8px; background: #eee; border-radius: 999px; overflow: hidden; margin: 8px 0 4px; }
+  .progress div { height: 100%; background: var(--y); }
+  .big { background: var(--char); color: #fff; border-radius: 12px; padding: 18px; }
+  .big .label { color: #cfcfcf; font-size: 12.5px; }
+  .big .value { font-size: 34px; font-weight: 800; color: var(--y); margin: 4px 0 2px; }
+  .kv { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f0ece0; font-size: 13.5px; }
+  .kv:last-child { border-bottom: none; }
+  .kv b { font-variant-numeric: tabular-nums; }
+  .ratio { margin: 12px 0; }
+  .ratio .top { display: flex; justify-content: space-between; font-size: 13px; }
+  .bar { position: relative; height: 10px; background: #eee; border-radius: 999px; margin-top: 6px; }
+  .bar .fill { height: 100%; border-radius: 999px; }
+  .bar .limit { position: absolute; top: -4px; width: 2px; height: 18px; background: var(--char); }
+  .status { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 8px; }
+  .status.ok { background: var(--ok-soft); color: var(--ok); }
+  .status.bad { background: var(--bad-soft); color: var(--bad); }
+  .note { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .warn { background: var(--bad-soft); color: var(--bad); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; margin-top: 10px; display: none; }
+  .btn { display: inline-block; background: var(--y); color: var(--ink); border: none; border-radius: 8px; padding: 9px 14px; font-weight: 700; cursor: pointer; font-size: 13px; }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); }
+  textarea { width: 100%; min-height: 70px; border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: inherit; }
+  .muted { color: var(--muted); }
+  .flex { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--char); color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">BV</span>
+  <h1>BrokerVault · Affordability Review</h1>
+  <span class="who">Signed in as <b>Maria Chen</b> (Agent)</span>
+</header>
+
+<main>
+  <!-- LEFT: client + documents -->
+  <section>
+    <div class="card">
+      <h2>Client file</h2>
+      <label for="client">Select client</label>
+      <select id="client"></select>
+      <div class="progress"><div id="docProgress"></div></div>
+      <div class="note" id="docSummary"></div>
+      <h3>Documents</h3>
+      <ul class="docs" id="docList"></ul>
+      <div class="warn" id="docWarn"></div>
+    </div>
+  </section>
+
+  <!-- MIDDLE: inputs -->
+  <section class="card">
+    <h2>Inputs from the client's documents</h2>
+    <p class="note">Each field shows which document it comes from. Values are pre-filled from the client file; Maria verifies them against the uploaded documents.</p>
+
+    <h3>Income (gross, annual)</h3>
+    <div class="row2">
+      <div><label>Applicant income <span class="src">T4 / NOA / pay stub</span></label><input type="number" id="inc1" min="0" step="1000"></div>
+      <div><label>Co-applicant income <span class="src">T4 / NOA</span></label><input type="number" id="inc2" min="0" step="1000"></div>
+    </div>
+
+    <h3>Monthly debts</h3>
+    <div class="row2">
+      <div><label>Car / personal loans <span class="src">Credit report</span></label><input type="number" id="loans" min="0" step="10"></div>
+      <div><label>Credit card balances (total) <span class="src">Credit report</span></label><input type="number" id="cards" min="0" step="100"></div>
+      <div><label>Lines of credit / other <span class="src">Bank statements</span></label><input type="number" id="other" min="0" step="10"></div>
+      <div><label>Counted card payment</label><input type="text" id="cardPay" disabled></div>
+    </div>
+
+    <h3>Down payment &amp; property</h3>
+    <div class="row2">
+      <div><label>Down payment available <span class="src">Bank statements</span></label><input type="number" id="down" min="0" step="1000"></div>
+      <div><label>Property tax (annual) <span class="src">Listing / MLS</span></label><input type="number" id="tax" min="0" step="100"></div>
+      <div><label>Heating (monthly)</label><input type="number" id="heat" min="0" step="10"></div>
+      <div><label>Condo fees (monthly)</label><input type="number" id="condo" min="0" step="10"></div>
+    </div>
+
+    <h3>Mortgage terms</h3>
+    <div class="row2">
+      <div><label>Contract rate (%)</label><input type="number" id="rate" min="0" step="0.01"></div>
+      <div><label>Amortization</label>
+        <select id="amort"><option value="25">25 years</option><option value="30">30 years</option></select></div>
+      <div><label>Buyer type</label>
+        <select id="buyer"><option value="first">First-time buyer</option><option value="repeat">Repeat buyer</option></select></div>
+      <div><label>Qualifying rate (stress test)</label><input type="text" id="qrate" disabled></div>
+    </div>
+    <div class="warn" id="amortWarn"></div>
+  </section>
+
+  <!-- RIGHT: results -->
+  <section>
+    <div class="big">
+      <div class="label">Maximum purchase price</div>
+      <div class="value" id="maxPrice">—</div>
+      <div class="label" id="limitingRule"></div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h2>Breakdown</h2>
+      <div class="kv"><span>Down payment</span><b id="rDown">—</b></div>
+      <div class="kv"><span>Minimum down payment required</span><b id="rMinDown">—</b></div>
+      <div class="kv"><span>Mortgage before insurance</span><b id="rLoan">—</b></div>
+      <div class="kv"><span>CMHC premium <span class="muted" id="rPremRate"></span></span><b id="rPrem">—</b></div>
+      <div class="kv"><span>Total mortgage</span><b id="rTotal">—</b></div>
+      <div class="kv"><span>Monthly payment (contract rate)</span><b id="rPay">—</b></div>
+
+      <div class="ratio">
+        <div class="top"><span><b>GDS</b> housing costs ÷ income</span><span><b id="gds">—</b> / 39% <span class="status" id="gdsS"></span></span></div>
+        <div class="bar"><div class="fill" id="gdsBar"></div><div class="limit" style="left:65%"></div></div>
+      </div>
+      <div class="ratio">
+        <div class="top"><span><b>TDS</b> all debts ÷ income</span><span><b id="tds">—</b> / 44% <span class="status" id="tdsS"></span></span></div>
+        <div class="bar"><div class="fill" id="tdsBar"></div><div class="limit" style="left:73.33%"></div></div>
+      </div>
+      <p class="note">Ratios are calculated at the qualifying rate. Bar scale: 0–60%; the black mark is the limit.</p>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h2>Agent notes</h2>
+      <textarea id="notes" placeholder="e.g. Verified T4 2025 and NOA 2025; bonus excluded (not guaranteed)."></textarea>
+      <div class="flex">
+        <button class="btn" id="copyBtn">Copy summary</button>
+        <button class="btn ghost" id="resetBtn">Reset to file values</button>
+      </div>
+      <p class="note" style="margin-top:10px">Estimate only, for the agent's pre-qualification review. Lender decisions vary. Rules used: GDS ≤ 39%, TDS ≤ 44%, qualifying rate = max(contract + 2%, 5.25%), CMHC tiers, $1.5M insured cap.</p>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast">Summary copied</div>
+
+<script>
+// ---------- Demo data (fictional clients) ----------
+const CLIENTS = [
+  { id: "C-1042", name: "Jane Doe", values: { inc1: 92000, inc2: 0, loans: 350, cards: 4000, other: 0, down: 60000, tax: 4800, heat: 100, condo: 0, rate: 4.29, amort: "30", buyer: "first" },
+    docs: [["Pay stub (Sep 2026)", true], ["T4 2025", true], ["Notice of Assessment 2025", true], ["Bank statements (90 days)", true], ["Photo ID", true], ["Employment letter", false]] },
+  { id: "C-1043", name: "Amir & Lena Haddad", values: { inc1: 118000, inc2: 74000, loans: 620, cards: 2500, other: 150, down: 140000, tax: 6900, heat: 120, condo: 0, rate: 4.09, amort: "25", buyer: "repeat" },
+    docs: [["Pay stubs (both)", true], ["T4 2025 (both)", true], ["Notice of Assessment 2025", false], ["Bank statements (90 days)", true], ["Photo ID (both)", true], ["Employment letters", true]] },
+  { id: "C-1044", name: "Wei Zhang", values: { inc1: 68000, inc2: 0, loans: 0, cards: 1200, other: 0, down: 35000, tax: 3200, heat: 90, condo: 520, rate: 4.39, amort: "30", buyer: "first" },
+    docs: [["Pay stub (Sep 2026)", true], ["T4 2025", false], ["Notice of Assessment 2025", false], ["Bank statements (90 days)", true], ["Photo ID", true], ["Employment letter", true]] },
+];
+
+const RULES = { gds: 0.39, tds: 0.44, floor: 5.25, buffer: 2.0, cardPct: 0.03, condoPct: 0.5, cap: 1500000 };
+const FIELDS = ["inc1","inc2","loans","cards","other","down","tax","heat","condo","rate","amort","buyer"];
+const $ = (id) => document.getElementById(id);
+const money = (n) => isFinite(n) ? n.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }) : "—";
+const pct = (n) => (n * 100).toFixed(1) + "%";
+let current = CLIENTS[0];
+
+// ---------- Mortgage math (Canadian: semi-annual compounding) ----------
+function monthlyRate(annualPct) { return Math.pow(1 + annualPct / 100 / 2, 2 / 12) - 1; }
+function payment(principal, annualPct, years) {
+  const i = monthlyRate(annualPct), n = years * 12;
+  return i === 0 ? principal / n : principal * i / (1 - Math.pow(1 + i, -n));
+}
+function principalFromPayment(pmt, annualPct, years) {
+  const i = monthlyRate(annualPct), n = years * 12;
+  return i === 0 ? pmt * n : pmt * (1 - Math.pow(1 + i, -n)) / i;
+}
+function minDown(price) {
+  if (price >= RULES.cap) return price * 0.20;
+  if (price <= 500000) return price * 0.05;
+  return 25000 + (price - 500000) * 0.10;
+}
+function premiumRate(ltv, years) {
+  if (ltv <= 0.80) return 0;
+  let r = ltv <= 0.85 ? 0.028 : ltv <= 0.90 ? 0.031 : 0.040;
+  if (years === 30) r += 0.002;
+  return r;
+}
+
+function calculate(v) {
+  const income = (v.inc1 + v.inc2) / 12;
+  const cardPay = v.cards * RULES.cardPct;
+  const debts = v.loans + cardPay + v.other;
+  const housingOther = v.tax / 12 + v.heat + v.condo * RULES.condoPct;
+  const qRate = Math.max(v.rate + RULES.buffer, RULES.floor);
+  const years = Number(v.amort);
+
+  const pmtGds = income * RULES.gds - housingOther;
+  const pmtTds = income * RULES.tds - housingOther - debts;
+  const maxPmt = Math.max(0, Math.min(pmtGds, pmtTds));
+  const maxLoan = principalFromPayment(maxPmt, qRate, years);
+
+  // Binary search for the highest price that satisfies down payment + debt-service rules
+  const feasible = (price) => {
+    if (v.down < minDown(price)) return false;
+    const base = Math.max(0, price - v.down);
+    const ltv = price > 0 ? base / price : 0;
+    if (price >= RULES.cap && ltv > 0.80) return false;
+    return base * (1 + premiumRate(ltv, years)) <= maxLoan + 0.5;
+  };
+  let lo = 0, hi = 5000000;
+  for (let k = 0; k < 60; k++) { const mid = (lo + hi) / 2; feasible(mid) ? lo = mid : hi = mid; }
+  const price = Math.floor(lo / 100) * 100;
+
+  const base = Math.max(0, price - v.down);
+  const ltv = price > 0 ? base / price : 0;
+  const pr = premiumRate(ltv, years);
+  const total = base * (1 + pr);
+  const qPmt = payment(total, qRate, years);
+  const gds = income > 0 ? (qPmt + housingOther) / income : 0;
+  const tds = income > 0 ? (qPmt + housingOther + debts) / income : 0;
+
+  // Which rule binds?
+  const downLimited = !feasible(price + 1000) && v.down < minDown(price + 1000);
+  let limiting = pmtTds < pmtGds ? "Limited by TDS (other debts)" : "Limited by GDS (housing costs)";
+  if (downLimited) limiting = "Limited by minimum down payment";
+  if (maxPmt === 0) limiting = "Income does not cover housing costs and debts";
+
+  return { price, base, total, pr, ltv, qRate, cardPay, gds, tds, minDownAmt: minDown(price), pay: payment(total, v.rate, years), limiting };
+}
+
+// ---------- UI ----------
+function readInputs() {
+  const v = {};
+  FIELDS.forEach(f => { const el = $(f); v[f] = (f === "amort" || f === "buyer") ? el.value : (parseFloat(el.value) || 0); });
+  return v;
+}
+function fillInputs(values) { FIELDS.forEach(f => $(f).value = values[f]); }
+
+function renderDocs() {
+  const list = $("docList"); list.innerHTML = "";
+  current.docs.forEach((d, idx) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span>${d[0]}</span>` + (d[1]
+      ? `<span class="pill ok">Received</span>`
+      : `<span class="pill miss">Missing</span><button data-i="${idx}">Remind</button>`);
+    list.appendChild(li);
+  });
+  const got = current.docs.filter(d => d[1]).length, all = current.docs.length;
+  $("docProgress").style.width = (got / all * 100) + "%";
+  $("docSummary").textContent = `${current.name} · ${current.id} · ${got} of ${all} documents received`;
+  const missing = current.docs.filter(d => !d[1]).map(d => d[0]);
+  const w = $("docWarn");
+  if (missing.length) { w.style.display = "block"; w.textContent = "Not yet verifiable: " + missing.join(", ") + ". Treat related inputs as provisional."; }
+  else w.style.display = "none";
+  list.querySelectorAll("button").forEach(b => b.onclick = () => toast(`Reminder sent to ${current.name}: ${current.docs[b.dataset.i][0]}`));
+}
+
+function bar(el, value, limit) {
+  const w = Math.min(value / 0.60, 1) * 100;
+  el.style.width = w + "%";
+  el.style.background = value <= limit ? "var(--ok)" : "var(--bad)";
+}
+function status(el, ok) { el.textContent = ok ? "PASS" : "FAIL"; el.className = "status " + (ok ? "ok" : "bad"); }
+
+function render() {
+  const v = readInputs();
+  const r = calculate(v);
+  $("cardPay").value = money(r.cardPay) + " / month (3%)";
+  $("qrate").value = r.qRate.toFixed(2) + "%";
+  $("maxPrice").textContent = money(r.price);
+  $("limitingRule").textContent = r.limiting;
+  $("rDown").textContent = money(v.down);
+  $("rMinDown").textContent = money(r.minDownAmt);
+  $("rLoan").textContent = money(r.base);
+  $("rPremRate").textContent = r.pr ? `(${(r.pr * 100).toFixed(2)}%, LTV ${(r.ltv * 100).toFixed(1)}%)` : "(not required, 20%+ down)";
+  $("rPrem").textContent = money(r.base * r.pr);
+  $("rTotal").textContent = money(r.total);
+  $("rPay").textContent = money(r.pay);
+  $("gds").textContent = pct(r.gds); $("tds").textContent = pct(r.tds);
+  bar($("gdsBar"), r.gds, RULES.gds); bar($("tdsBar"), r.tds, RULES.tds);
+  status($("gdsS"), r.gds <= RULES.gds + 1e-6); status($("tdsS"), r.tds <= RULES.tds + 1e-6);
+  const aw = $("amortWarn");
+  if (v.amort === "30" && v.buyer === "repeat") { aw.style.display = "block"; aw.textContent = "30-year insured amortization is generally limited to first-time buyers or new builds. Check eligibility."; }
+  else aw.style.display = "none";
+  return { v, r };
+}
+
+function selectClient(id) {
+  current = CLIENTS.find(c => c.id === id);
+  fillInputs(current.values); renderDocs(); render();
+  $("notes").value = "";
+}
+
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); }
+
+// init
+CLIENTS.forEach(c => { const o = document.createElement("option"); o.value = c.id; o.textContent = `${c.name} (${c.id})`; $("client").appendChild(o); });
+$("client").onchange = (e) => selectClient(e.target.value);
+FIELDS.forEach(f => $(f).addEventListener("input", render));
+$("resetBtn").onclick = () => { fillInputs(current.values); render(); toast("Reset to client file values"); };
+$("copyBtn").onclick = () => {
+  const { v, r } = render();
+  const text = [
+    `BrokerVault affordability review: ${current.name} (${current.id})`,
+    `Max purchase price: ${money(r.price)} (${r.limiting})`,
+    `Income: ${money(v.inc1 + v.inc2)}/yr · Down payment: ${money(v.down)}`,
+    `Total mortgage: ${money(r.total)} incl. CMHC ${money(r.base * r.pr)}`,
+    `Payment: ${money(r.pay)}/mo at ${v.rate}% · ${v.amort} yrs · qualifying rate ${r.qRate.toFixed(2)}%`,
+    `GDS ${pct(r.gds)} / 39% · TDS ${pct(r.tds)} / 44%`,
+    $("notes").value ? `Notes: ${$("notes").value}` : ""
+  ].filter(Boolean).join("\n");
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast("Summary copied"), () => toast("Copy not available"));
+};
+selectClient(CLIENTS[0].id);
+</script>
+</body>
+</html>

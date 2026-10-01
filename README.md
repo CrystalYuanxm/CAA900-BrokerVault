@@ -34,16 +34,28 @@ BrokerVault is a secure client portal where borrowers upload their mortgage docu
 
 ## Platform
 
-**Microsoft Azure** (Seneca-provided subscription), region **Canada Central**, so client financial data stays in Canada. Cost control: 10 USD monthly budget with an email alert at 50%.
+**Microsoft Azure** (Seneca-provided subscription), region **Canada Central**, so client financial data stays in Canada. Cost control: 10 USD monthly budget with email alerts at 50% and 80%.
+
+## Key features
+
+1. **Client portal:** borrowers upload documents to a private container and see their own checklist (received or missing).
+2. **Agent dashboard:** Maria sees every client's progress and sends reminders for missing documents.
+3. **Affordability review (`calculator.html`):** while reviewing a client's documents, Maria enters the verified figures (income from T4, NOA or pay stub; debts from the credit report; down payment from bank statements) and gets the maximum purchase price, CMHC premium, monthly payment, and GDS/TDS at the stress-test rate. Rules: GDS 39% or less, TDS 44% or less, qualifying rate = max(contract + 2%, 5.25%), CMHC down-payment tiers, $1.5M insured cap. Agent-only page, because it shows confidential data.
 
 ## Cloud resources (so far)
 
 | Resource | Name | Region | Notes |
 |---|---|---|---|
-| Resource group | `rg-brokervault-dev` | Canada Central | Holds all dev resources |
-| Storage account | `stbrokervaultxyuan` | Canada Central | Standard, LRS, Hot tier, anonymous access disabled |
+| Resource group | `caa900-brokervault-rg` | Canada Central | Holds all dev resources; tags Project=CAA900, Team=brokervault, Env=dev |
+| Storage account | `caa900brokervaultup` | Canada Central | Standard, LRS, Hot tier, anonymous access disabled |
 | Blob container | `client-documents` | — | Private; holds client uploads |
-| Budget | `budget-brokervault` | — | 10 USD/month, email alert at 50% |
+| Budget | `caa900-brokervault-monthly` | — | 10 USD/month, email alerts at 50% and 80% |
+
+## Architecture
+
+Architecture v0 is based on reference **Pattern D (secure file intake)**: see `docs/architecture-v0.png` and Progress Submission 1.
+
+![Architecture v0](docs/architecture-v0.png)
 
 ## Why it needs the cloud
 
