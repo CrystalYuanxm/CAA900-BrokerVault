@@ -165,6 +165,7 @@
       <textarea id="notes" placeholder="e.g. Verified T4 2025 and NOA 2025; bonus excluded (not guaranteed)."></textarea>
       <div class="flex">
         <button class="btn" id="saveBtn">Save review</button>
+        <button class="btn ghost" id="pdfBtn">Export PDF</button>
         <button class="btn ghost" id="copyBtn">Copy summary</button>
         <button class="btn ghost" id="resetBtn">Reset to file values</button>
       </div>
@@ -175,6 +176,7 @@
 <div class="toast" id="toast">Summary copied</div>
 
 <script src="/app.js"></script>
+<script src="/vendor/jspdf.umd.min.js"></script>
 <script>
 // ---------- Client data comes from the BrokerVault API (owner only) ----------
 // Starting values for the three fictional sample clients; real clients start blank until Maria enters verified figures.
@@ -192,6 +194,7 @@ const $ = (id) => document.getElementById(id);
 const money = (n) => isFinite(n) ? n.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }) : "—";
 const pct = (n) => (n * 100).toFixed(1) + "%";
 let current = null;
+let incomeSource = "Entered by the agent";
 
 // ---------- Mortgage math (Canadian: semi-annual compounding) ----------
 function monthlyRate(annualPct) { return Math.pow(1 + annualPct / 100 / 2, 2 / 12) - 1; }
@@ -330,6 +333,7 @@ async function selectClient(id) {
   $("suggestions").innerHTML = "";
   fillInputs(current.values); renderDocs(); render();
   $("notes").value = saved ? saved.notes || "" : "";
+  incomeSource = saved ? "From the saved review (verified by the agent)" : "Entered by the agent";
 }
 
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); }
@@ -337,6 +341,7 @@ function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add
 // init
 $("client").onchange = (e) => selectClient(e.target.value).catch(err => toast(err.message));
 FIELDS.forEach(f => $(f).addEventListener("input", render));
+$("inc1").addEventListener("input", () => { incomeSource = "Entered by the agent"; });
 $("resetBtn").onclick = () => { fillInputs(current.values); render(); toast("Reset to client file values"); };
 $("readBtn").onclick = async () => {
   const out = $("suggestions");
@@ -346,11 +351,11 @@ $("readBtn").onclick = async () => {
     const rows = r.suggestions.map((s, i) => `
       <div class="sugg ${i === 0 ? "best" : ""}">
         <span>${i === 0 ? "<b>Suggested</b> · " : ""}${esc(s.source)}: <b>${money(s.annual)}</b> / year<br><span class="note" style="margin:0">${esc(s.detail)} · ${esc(s.fileName)}</span></span>
-        <span><button class="btn ghost" type="button" data-open="${s.docId}">Open</button> <button class="btn" type="button" data-use="${s.annual}">Use</button></span>
+        <span><button class="btn ghost" type="button" data-open="${s.docId}">Open</button> <button class="btn" type="button" data-use="${s.annual}" data-src="${esc(`${s.source}: ${s.detail} (${s.fileName})`)}">Use</button></span>
       </div>`).join("");
     const notes = r.notes.map((n) => `<div class="note" style="margin-top:6px">⚠ ${esc(n)}</div>`).join("");
     out.innerHTML = rows || notes ? rows + notes : '<div class="note" style="margin-top:8px">No T4, NOA or pay stub PDF uploaded yet for this client.</div>';
-    out.querySelectorAll("button[data-use]").forEach(b => b.onclick = () => { $("inc1").value = b.dataset.use; render(); toast("Applicant income filled from the document. Check it before saving."); });
+    out.querySelectorAll("button[data-use]").forEach(b => b.onclick = () => { $("inc1").value = b.dataset.use; incomeSource = b.dataset.src; render(); toast("Applicant income filled from the document. Check it before saving."); });
     out.querySelectorAll("button[data-open]").forEach(b => b.onclick = () => download(b.dataset.open, current.id).catch(e => toast(e.message)));
   } catch (e) { out.innerHTML = `<div class="note" style="margin-top:8px">${esc(e.message)}</div>`; }
 };
@@ -364,6 +369,105 @@ $("saveBtn").onclick = async () => {
     current.values = v; current.savedAt = res.savedAt; renderDocs();
     toast("Review saved to the client file");
   } catch (e) { toast(e.message); }
+};
+
+// ---------- Export a one-page pre-qualification summary as PDF (generated in the browser) ----------
+$("pdfBtn").onclick = () => {
+  if (!current) return;
+  const { v, r } = render();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const W = doc.internal.pageSize.getWidth(), M = 48;
+  const today = new Date();
+  const dateStr = today.toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric" });
+  const m = (n) => money(n).replace("CA", "");
+  let y = 0;
+
+  // header band
+  doc.setFillColor(245, 183, 0); doc.rect(0, 0, W, 74, "F");
+  doc.setTextColor(28, 28, 28); doc.setFont("helvetica", "bold"); doc.setFontSize(20);
+  doc.text("Pre-qualification Summary", M, 36);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+  doc.text("BrokerVault · Maria Chen, independent mortgage agent", M, 56);
+  doc.text(dateStr, W - M, 56, { align: "right" });
+
+  y = 104;
+  doc.setFontSize(10); doc.setTextColor(94, 88, 74); doc.text("CLIENT", M, y);
+  doc.setFontSize(14); doc.setTextColor(28, 28, 28); doc.setFont("helvetica", "bold"); doc.text(String(current.name), M, y + 18);
+
+  // headline
+  y += 44;
+  doc.setFillColor(42, 42, 42); doc.roundedRect(M, y, W - 2 * M, 78, 8, 8, "F");
+  doc.setTextColor(207, 207, 207); doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+  doc.text("Estimated maximum purchase price", M + 18, y + 24);
+  doc.setTextColor(245, 183, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(28);
+  doc.text(m(r.price), M + 18, y + 56);
+  doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+  doc.text(r.limiting, W - M - 18, y + 56, { align: "right" });
+
+  // two columns of figures
+  y += 104;
+  const left = [
+    ["Gross annual income", m(v.inc1 + v.inc2)],
+    ["Down payment", m(v.down)],
+    ["Minimum down payment", m(r.minDownAmt)],
+    ["Mortgage before insurance", m(r.base)],
+    ["CMHC premium", r.pr ? `${m(r.base * r.pr)} (${(r.pr * 100).toFixed(2)}%)` : "Not required"],
+    ["Total mortgage", m(r.total)],
+  ];
+  const right = [
+    ["Contract rate", `${v.rate.toFixed(2)}%`],
+    ["Qualifying rate (stress test)", `${r.qRate.toFixed(2)}%`],
+    ["Amortization", `${v.amort} years`],
+    ["Monthly payment", m(r.pay)],
+    ["GDS (limit 39%)", `${pct(r.gds)}  ${r.gds <= 0.39 + 1e-6 ? "PASS" : "FAIL"}`],
+    ["TDS (limit 44%)", `${pct(r.tds)}  ${r.tds <= 0.44 + 1e-6 ? "PASS" : "FAIL"}`],
+  ];
+  const colW = (W - 2 * M - 24) / 2;
+  const drawRows = (rows, x) => rows.forEach(([k, val], i) => {
+    const yy = y + i * 24;
+    if (i % 2 === 0) { doc.setFillColor(255, 243, 196); doc.rect(x, yy - 15, colW, 24, "F"); }
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(60, 60, 60); doc.text(k, x + 8, yy);
+    doc.setFont("helvetica", "bold"); doc.setTextColor(28, 28, 28); doc.text(val, x + colW - 8, yy, { align: "right" });
+  });
+  drawRows(left, M); drawRows(right, M + colW + 24);
+
+  // income source and documents
+  y += 6 * 24 + 18;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text("Income source", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+  doc.text(doc.splitTextToSize(incomeSource, W - 2 * M), M, y + 16);
+  y += 44;
+  const got = current.items.filter((d) => d.status === "received").map((d) => d.label);
+  const miss = current.items.filter((d) => d.status !== "received").map((d) => d.label);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text(`Documents received (${got.length} of ${current.items.length})`, M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+  doc.text(doc.splitTextToSize(got.length ? got.join(", ") : "None yet", W - 2 * M), M, y + 16);
+  y += 40;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(180, 35, 24); doc.text("Still needed", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(28, 28, 28);
+  doc.text(doc.splitTextToSize(miss.length ? miss.join(", ") : "Nothing: the file is complete", W - 2 * M), M, y + 16);
+
+  // notes
+  y += 44;
+  const notes = $("notes").value.trim();
+  if (notes) {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text("Agent notes", M, y);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    const lines = doc.splitTextToSize(notes, W - 2 * M).slice(0, 6);
+    doc.text(lines, M, y + 16); y += 20 + lines.length * 13;
+  }
+
+  // disclaimer footer
+  const H = doc.internal.pageSize.getHeight();
+  doc.setDrawColor(230, 223, 200); doc.line(M, H - 92, W - M, H - 92);
+  doc.setFontSize(8.5); doc.setTextColor(94, 88, 74);
+  doc.text(doc.splitTextToSize("This is an estimate for pre-qualification only. It is not a mortgage approval or a commitment to lend. Final amounts, rates and terms depend on the lender's review, the property, and verification of all documents. Rules used: GDS 39%, TDS 44%, qualifying rate = the higher of the contract rate + 2% or 5.25%, CMHC down payment tiers and premiums, $1.5M insured price cap.", W - 2 * M), M, H - 76);
+  doc.text(`Prepared with BrokerVault on ${dateStr}. Confidential: contains personal financial information.`, M, H - 34);
+
+  const safe = String(current.name).replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "client";
+  doc.save(`PreQual_${safe}_${today.toISOString().slice(0, 10)}.pdf`);
+  toast("PDF downloaded");
 };
 $("copyBtn").onclick = () => {
   const { v, r } = render();
