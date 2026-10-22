@@ -1,0 +1,376 @@
+{
+  "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Resources/deployments/brokervault-deploy",
+  "location": null,
+  "name": "brokervault-deploy",
+  "properties": {
+    "correlationId": "7933637e-ef2e-4635-ae7e-5259a5b33ea6",
+    "debugSetting": null,
+    "dependencies": [
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs",
+            "resourceGroup": "caa900-brokervault-rg",
+            "resourceName": "caa900brokervaultdocs",
+            "resourceType": "Microsoft.Storage/storageAccounts"
+          },
+          {
+            "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Web/staticSites/caa900-brokervault-web",
+            "resourceGroup": "caa900-brokervault-rg",
+            "resourceName": "caa900-brokervault-web",
+            "resourceType": "Microsoft.Web/staticSites"
+          },
+          {
+            "apiVersion": "2023-01-01",
+            "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Web/staticSites/caa900-brokervault-web",
+            "resourceGroup": "caa900-brokervault-rg",
+            "resourceName": "caa900-brokervault-web",
+            "resourceType": "Microsoft.Web/staticSites"
+          }
+        ],
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/blobServices/default",
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceName": "caa900brokervaultdocs/default",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/blobServices/default",
+            "resourceGroup": "caa900-brokervault-rg",
+            "resourceName": "caa900brokervaultdocs/default",
+            "resourceType": "Microsoft.Storage/storageAccounts/blobServices"
+          }
+        ],
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/blobServices/default/containers/client-documents",
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceName": "caa900brokervaultdocs/default/client-documents",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices/containers"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs",
+            "resourceGroup": "caa900-brokervault-rg",
+            "resourceName": "caa900brokervaultdocs",
+            "resourceType": "Microsoft.Storage/storageAccounts"
+          }
+        ],
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/tableServices/default",
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceName": "caa900brokervaultdocs/default",
+        "resourceType": "Microsoft.Storage/storageAccounts/tableServices"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/tableServices/default",
+            "resourceGroup": "caa900-brokervault-rg",
+            "resourceName": "caa900brokervaultdocs/default",
+            "resourceType": "Microsoft.Storage/storageAccounts/tableServices"
+          }
+        ],
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/tableServices/default/tables/Clients",
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceName": "caa900brokervaultdocs/default/Clients",
+        "resourceType": "Microsoft.Storage/storageAccounts/tableServices/tables"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/tableServices/default",
+            "resourceGroup": "caa900-brokervault-rg",
+            "resourceName": "caa900brokervaultdocs/default",
+            "resourceType": "Microsoft.Storage/storageAccounts/tableServices"
+          }
+        ],
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/tableServices/default/tables/Documents",
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceName": "caa900brokervaultdocs/default/Documents",
+        "resourceType": "Microsoft.Storage/storageAccounts/tableServices/tables"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/tableServices/default",
+            "resourceGroup": "caa900-brokervault-rg",
+            "resourceName": "caa900brokervaultdocs/default",
+            "resourceType": "Microsoft.Storage/storageAccounts/tableServices"
+          }
+        ],
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/tableServices/default/tables/Audit",
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceName": "caa900brokervaultdocs/default/Audit",
+        "resourceType": "Microsoft.Storage/storageAccounts/tableServices/tables"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs",
+            "resourceGroup": "caa900-brokervault-rg",
+            "resourceName": "caa900brokervaultdocs",
+            "resourceType": "Microsoft.Storage/storageAccounts"
+          },
+          {
+            "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Web/staticSites/caa900-brokervault-web",
+            "resourceGroup": "caa900-brokervault-rg",
+            "resourceName": "caa900-brokervault-web",
+            "resourceType": "Microsoft.Web/staticSites"
+          },
+          {
+            "actionName": "listKeys",
+            "apiVersion": "2023-05-01",
+            "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs",
+            "resourceGroup": "caa900-brokervault-rg",
+            "resourceName": "caa900brokervaultdocs",
+            "resourceType": "Microsoft.Storage/storageAccounts"
+          }
+        ],
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Web/staticSites/caa900-brokervault-web/config/appsettings",
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceName": "caa900-brokervault-web/appsettings",
+        "resourceType": "Microsoft.Web/staticSites/config"
+      }
+    ],
+    "diagnostics": null,
+    "duration": "PT24.0534631S",
+    "error": null,
+    "extensions": [],
+    "mode": "Incremental",
+    "onErrorDeployment": null,
+    "outputResources": [
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs",
+        "identifiers": null,
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceType": "Microsoft.Storage/storageAccounts"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/blobServices/default",
+        "identifiers": null,
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/blobServices/default/containers/client-documents",
+        "identifiers": null,
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices/containers"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/tableServices/default",
+        "identifiers": null,
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceType": "Microsoft.Storage/storageAccounts/tableServices"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/tableServices/default/tables/Audit",
+        "identifiers": null,
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceType": "Microsoft.Storage/storageAccounts/tableServices/tables"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/tableServices/default/tables/Clients",
+        "identifiers": null,
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceType": "Microsoft.Storage/storageAccounts/tableServices/tables"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Storage/storageAccounts/caa900brokervaultdocs/tableServices/default/tables/Documents",
+        "identifiers": null,
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceType": "Microsoft.Storage/storageAccounts/tableServices/tables"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Web/staticSites/caa900-brokervault-web",
+        "identifiers": null,
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceType": "Microsoft.Web/staticSites"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/61775cad-3c8c-462b-93d7-5debb35f404d/resourceGroups/caa900-brokervault-rg/providers/Microsoft.Web/staticSites/caa900-brokervault-web/config/appsettings",
+        "identifiers": null,
+        "resourceGroup": "caa900-brokervault-rg",
+        "resourceType": "Microsoft.Web/staticSites/config"
+      }
+    ],
+    "outputs": {
+      "storageAccount": {
+        "type": "String",
+        "value": "caa900brokervaultdocs"
+      },
+      "webName": {
+        "type": "String",
+        "value": "caa900-brokervault-web"
+      },
+      "webUrl": {
+        "type": "String",
+        "value": "https://mango-mushroom-0d076930f.6.azurestaticapps.net"
+      }
+    },
+    "parameters": {
+      "env": {
+        "type": "String",
+        "value": "dev"
+      },
+      "location": {
+        "type": "String",
+        "value": "canadacentral"
+      },
+      "team": {
+        "type": "String",
+        "value": "brokervault"
+      },
+      "webLocation": {
+        "type": "String",
+        "value": "eastus2"
+      }
+    },
+    "parametersLink": null,
+    "providers": [
+      {
+        "id": null,
+        "namespace": "Microsoft.Web",
+        "providerAuthorizationConsentState": null,
+        "registrationPolicy": null,
+        "registrationState": null,
+        "resourceTypes": [
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              "eastus2"
+            ],
+            "properties": null,
+            "resourceType": "staticSites",
+            "zoneMappings": null
+          },
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              null
+            ],
+            "properties": null,
+            "resourceType": "staticSites/config",
+            "zoneMappings": null
+          }
+        ]
+      },
+      {
+        "id": null,
+        "namespace": "Microsoft.Storage",
+        "providerAuthorizationConsentState": null,
+        "registrationPolicy": null,
+        "registrationState": null,
+        "resourceTypes": [
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              "canadacentral"
+            ],
+            "properties": null,
+            "resourceType": "storageAccounts",
+            "zoneMappings": null
+          },
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              null
+            ],
+            "properties": null,
+            "resourceType": "storageAccounts/blobServices",
+            "zoneMappings": null
+          },
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              null
+            ],
+            "properties": null,
+            "resourceType": "storageAccounts/blobServices/containers",
+            "zoneMappings": null
+          },
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              null
+            ],
+            "properties": null,
+            "resourceType": "storageAccounts/tableServices",
+            "zoneMappings": null
+          },
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              null
+            ],
+            "properties": null,
+            "resourceType": "storageAccounts/tableServices/tables",
+            "zoneMappings": null
+          }
+        ]
+      }
+    ],
+    "provisioningState": "Succeeded",
+    "templateHash": "7934343100842024591",
+    "templateLink": null,
+    "timestamp": "2026-10-22T04:17:32.631173+00:00",
+    "validatedResources": null,
+    "validationLevel": null
+  },
+  "resourceGroup": "caa900-brokervault-rg",
+  "tags": null,
+  "type": "Microsoft.Resources/deployments"
+}
