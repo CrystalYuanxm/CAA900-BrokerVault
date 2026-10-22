@@ -113,6 +113,11 @@ resource auditTable 'Microsoft.Storage/storageAccounts/tableServices/tables@2023
   name: 'Audit'
 }
 
+resource reviewsTable 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-05-01' = {
+  parent: tableService
+  name: 'Reviews'
+}
+
 // ---------- API settings (stored encrypted by Azure, never in the repo) ----------
 resource webSettings 'Microsoft.Web/staticSites/config@2023-01-01' = {
   parent: web

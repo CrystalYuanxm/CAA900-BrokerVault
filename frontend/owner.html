@@ -58,7 +58,7 @@ async function openClient(id) {
     <p class="muted">${d.checklist.received} of ${d.checklist.total} received · client since ${fmtDate(d.client.createdAt)}</p>
     <table>${d.checklist.items.map((i) => `<tr><td>${esc(i.label)}</td><td><span class="pill ${i.status === "received" ? "ok" : "miss"}">${i.status}</span></td>
       <td style="text-align:right">${i.docId && !i.demo ? `<button class="btn ghost" onclick="download('${i.docId}','${id}')">Download</button>` : i.demo ? '<span class="muted">sample</span>' : ""}</td></tr>`).join("")}</table>
-    <div class="row" style="margin-top:12px"><a class="btn" href="/calculator.html">Open affordability review</a></div>`;
+    <div class="row" style="margin-top:12px"><a class="btn" href="/calculator.html?client=${id}">Open affordability review</a></div>`;
   loadAudit();
 }
 async function loadAudit() {

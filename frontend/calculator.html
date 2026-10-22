@@ -154,7 +154,8 @@
       <h2>Agent notes</h2>
       <textarea id="notes" placeholder="e.g. Verified T4 2025 and NOA 2025; bonus excluded (not guaranteed)."></textarea>
       <div class="flex">
-        <button class="btn" id="copyBtn">Copy summary</button>
+        <button class="btn" id="saveBtn">Save review</button>
+        <button class="btn ghost" id="copyBtn">Copy summary</button>
         <button class="btn ghost" id="resetBtn">Reset to file values</button>
       </div>
       <p class="note" style="margin-top:10px">Estimate only, for the agent's pre-qualification review. Lender decisions vary. Rules used: GDS ≤ 39%, TDS ≤ 44%, qualifying rate = max(contract + 2%, 5.25%), CMHC tiers, $1.5M insured cap.</p>
@@ -163,23 +164,24 @@
 </main>
 <div class="toast" id="toast">Summary copied</div>
 
+<script src="/app.js"></script>
 <script>
-// ---------- Demo data (fictional clients) ----------
-const CLIENTS = [
-  { id: "C-1042", name: "Jane Doe", values: { inc1: 92000, inc2: 0, loans: 350, cards: 4000, other: 0, down: 60000, tax: 4800, heat: 100, condo: 0, rate: 4.29, amort: "30", buyer: "first" },
-    docs: [["Pay stub (Sep 2026)", true], ["T4 2025", true], ["Notice of Assessment 2025", true], ["Bank statements (90 days)", true], ["Photo ID", true], ["Employment letter", false]] },
-  { id: "C-1043", name: "Amir & Lena Haddad", values: { inc1: 118000, inc2: 74000, loans: 620, cards: 2500, other: 150, down: 140000, tax: 6900, heat: 120, condo: 0, rate: 4.09, amort: "25", buyer: "repeat" },
-    docs: [["Pay stubs (both)", true], ["T4 2025 (both)", true], ["Notice of Assessment 2025", false], ["Bank statements (90 days)", true], ["Photo ID (both)", true], ["Employment letters", true]] },
-  { id: "C-1044", name: "Wei Zhang", values: { inc1: 68000, inc2: 0, loans: 0, cards: 1200, other: 0, down: 35000, tax: 3200, heat: 90, condo: 520, rate: 4.39, amort: "30", buyer: "first" },
-    docs: [["Pay stub (Sep 2026)", true], ["T4 2025", false], ["Notice of Assessment 2025", false], ["Bank statements (90 days)", true], ["Photo ID", true], ["Employment letter", true]] },
-];
+// ---------- Client data comes from the BrokerVault API (owner only) ----------
+// Starting values for the three fictional sample clients; real clients start blank until Maria enters verified figures.
+const DEMO_VALUES = {
+  "demo-jane-doe": { inc1: 92000, inc2: 0, loans: 350, cards: 4000, other: 0, down: 60000, tax: 4800, heat: 100, condo: 0, rate: 4.29, amort: "30", buyer: "first" },
+  "demo-amir-haddad": { inc1: 118000, inc2: 74000, loans: 620, cards: 2500, other: 150, down: 140000, tax: 6900, heat: 120, condo: 0, rate: 4.09, amort: "25", buyer: "repeat" },
+  "demo-wei-zhang": { inc1: 68000, inc2: 0, loans: 0, cards: 1200, other: 0, down: 35000, tax: 3200, heat: 90, condo: 520, rate: 4.39, amort: "30", buyer: "first" },
+};
+const BLANK = { inc1: 0, inc2: 0, loans: 0, cards: 0, other: 0, down: 0, tax: 0, heat: 100, condo: 0, rate: 4.29, amort: "25", buyer: "first" };
+let CLIENTS = [];
 
 const RULES = { gds: 0.39, tds: 0.44, floor: 5.25, buffer: 2.0, cardPct: 0.03, condoPct: 0.5, cap: 1500000 };
 const FIELDS = ["inc1","inc2","loans","cards","other","down","tax","heat","condo","rate","amort","buyer"];
 const $ = (id) => document.getElementById(id);
 const money = (n) => isFinite(n) ? n.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }) : "—";
 const pct = (n) => (n * 100).toFixed(1) + "%";
-let current = CLIENTS[0];
+let current = null;
 
 // ---------- Mortgage math (Canadian: semi-annual compounding) ----------
 function monthlyRate(annualPct) { return Math.pow(1 + annualPct / 100 / 2, 2 / 12) - 1; }
@@ -255,21 +257,23 @@ function fillInputs(values) { FIELDS.forEach(f => $(f).value = values[f]); }
 
 function renderDocs() {
   const list = $("docList"); list.innerHTML = "";
-  current.docs.forEach((d, idx) => {
+  current.items.forEach((d) => {
     const li = document.createElement("li");
-    li.innerHTML = `<span>${d[0]}</span>` + (d[1]
-      ? `<span class="pill ok">Received</span>`
-      : `<span class="pill miss">Missing</span><button data-i="${idx}">Remind</button>`);
+    const canOpen = d.status === "received" && d.docId && !d.demo;
+    li.innerHTML = `<span>${esc(d.label)}</span>` + (d.status === "received"
+      ? `<span class="pill ok">Received</span>` + (canOpen ? `<button data-doc="${d.docId}">Open</button>` : "")
+      : `<span class="pill miss">Missing</span><button data-remind="${esc(d.label)}">Remind</button>`);
     list.appendChild(li);
   });
-  const got = current.docs.filter(d => d[1]).length, all = current.docs.length;
+  const got = current.items.filter(d => d.status === "received").length, all = current.items.length;
   $("docProgress").style.width = (got / all * 100) + "%";
-  $("docSummary").textContent = `${current.name} · ${current.id} · ${got} of ${all} documents received`;
-  const missing = current.docs.filter(d => !d[1]).map(d => d[0]);
+  $("docSummary").textContent = `${current.name} · ${got} of ${all} documents received` + (current.savedAt ? ` · review saved ${new Date(current.savedAt).toLocaleString("en-CA")}` : "");
+  const missing = current.items.filter(d => d.status !== "received").map(d => d.label);
   const w = $("docWarn");
   if (missing.length) { w.style.display = "block"; w.textContent = "Not yet verifiable: " + missing.join(", ") + ". Treat related inputs as provisional."; }
   else w.style.display = "none";
-  list.querySelectorAll("button").forEach(b => b.onclick = () => toast(`Reminder sent to ${current.name}: ${current.docs[b.dataset.i][0]}`));
+  list.querySelectorAll("button[data-doc]").forEach(b => b.onclick = () => download(b.dataset.doc, current.id).catch(e => toast(e.message)));
+  list.querySelectorAll("button[data-remind]").forEach(b => b.onclick = () => toast(`Reminder queued for ${current.name}: ${b.dataset.remind}`));
 }
 
 function bar(el, value, limit) {
@@ -302,23 +306,42 @@ function render() {
   return { v, r };
 }
 
-function selectClient(id) {
-  current = CLIENTS.find(c => c.id === id);
+async function selectClient(id) {
+  if (!id) return;
+  const d = await api(`owner/clients/${encodeURIComponent(id)}/documents`);
+  let saved = null;
+  try { saved = (await api(`owner/reviews?client=${encodeURIComponent(id)}`)).review; } catch {}
+  current = {
+    id, name: d.client.name, items: d.checklist.items,
+    values: (saved && saved.inputs) || DEMO_VALUES[id] || BLANK,
+    savedAt: saved ? saved.savedAt : null,
+  };
+  $("client").value = id;
   fillInputs(current.values); renderDocs(); render();
-  $("notes").value = "";
+  $("notes").value = saved ? saved.notes || "" : "";
 }
 
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); }
 
 // init
-CLIENTS.forEach(c => { const o = document.createElement("option"); o.value = c.id; o.textContent = `${c.name} (${c.id})`; $("client").appendChild(o); });
-$("client").onchange = (e) => selectClient(e.target.value);
+$("client").onchange = (e) => selectClient(e.target.value).catch(err => toast(err.message));
 FIELDS.forEach(f => $(f).addEventListener("input", render));
 $("resetBtn").onclick = () => { fillInputs(current.values); render(); toast("Reset to client file values"); };
+$("saveBtn").onclick = async () => {
+  const { v, r } = render();
+  try {
+    const res = await api("owner/reviews", { method: "POST", body: {
+      clientId: current.id, inputs: v, notes: $("notes").value,
+      result: { maxPrice: r.price, totalMortgage: Math.round(r.total), cmhc: Math.round(r.base * r.pr), payment: Math.round(r.pay), gds: +r.gds.toFixed(4), tds: +r.tds.toFixed(4), qualifyingRate: r.qRate, limiting: r.limiting },
+    } });
+    current.values = v; current.savedAt = res.savedAt; renderDocs();
+    toast("Review saved to the client file");
+  } catch (e) { toast(e.message); }
+};
 $("copyBtn").onclick = () => {
   const { v, r } = render();
   const text = [
-    `BrokerVault affordability review: ${current.name} (${current.id})`,
+    `BrokerVault affordability review: ${current.name}`,
     `Max purchase price: ${money(r.price)} (${r.limiting})`,
     `Income: ${money(v.inc1 + v.inc2)}/yr · Down payment: ${money(v.down)}`,
     `Total mortgage: ${money(r.total)} incl. CMHC ${money(r.base * r.pr)}`,
@@ -328,7 +351,14 @@ $("copyBtn").onclick = () => {
   ].filter(Boolean).join("\n");
   (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast("Summary copied"), () => toast("Copy not available"));
 };
-selectClient(CLIENTS[0].id);
+(async () => {
+  const data = await api("owner/clients");
+  CLIENTS = data.clients;
+  if (!CLIENTS.length) { $("docSummary").textContent = "No clients yet. Load the sample clients on the dashboard first."; return; }
+  CLIENTS.forEach(c => { const o = document.createElement("option"); o.value = c.clientId; o.textContent = `${c.name} (${c.received}/${c.total} docs)`; $("client").appendChild(o); });
+  const pre = new URLSearchParams(location.search).get("client");
+  await selectClient(CLIENTS.some(c => c.clientId === pre) ? pre : CLIENTS[0].clientId);
+})().catch(e => toast(e.message));
 </script>
 </body>
 </html>

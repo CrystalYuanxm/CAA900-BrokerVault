@@ -13,6 +13,7 @@ All routes are under `/api` on the Static Web App. The caller must be signed in,
 | `GET /api/owner/clients/{id}/documents` | Owner | One client's checklist and documents. |
 | `POST /api/owner/seed` | Owner | Adds three fictional sample clients for demos. |
 | `GET /api/owner/audit` | Owner | The latest 50 audit entries. |
+| `GET/POST /api/owner/reviews` | Owner | Load or save the affordability review (GDS/TDS, stress test, CMHC) for a client; every save is audited. |
 
 ## Data (Azure Table Storage, account `caa900brokervaultdocs`)
 | Table | PartitionKey | RowKey | Holds |
@@ -20,5 +21,6 @@ All routes are under `/api` on the Static Web App. The caller must be signed in,
 | `Clients` | `client` | user id | name, identity provider, createdAt, lastSeen |
 | `Documents` | user id | document id | docType, fileName, blobName, size, uploadedAt |
 | `Audit` | date | time and GUID | actor, action, target |
+| `Reviews` | client id | `latest` or `h-<time>` | affordability inputs, result, notes, savedBy |
 
 Files live in the private container `client-documents` as `<userId>/<docType>/<guid>.<ext>`.
