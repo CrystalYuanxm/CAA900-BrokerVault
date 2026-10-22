@@ -13,6 +13,7 @@ All routes are under `/api` on the Static Web App. The caller must be signed in,
 | `GET /api/owner/clients/{id}/documents` | Owner | One client's checklist and documents. |
 | `POST /api/owner/seed` | Owner | Adds three fictional sample clients for demos. |
 | `GET /api/owner/audit` | Owner | The latest 50 audit entries. |
+| `GET /api/owner/clients/{id}/income` | Owner | Reads the latest T4, NOA and pay stub PDFs (text layer) and suggests an annual income; Maria confirms it before it is used. Audited. |
 | `GET/POST /api/owner/reviews` | Owner | Load or save the affordability review (GDS/TDS, stress test, CMHC) for a client; every save is audited. |
 
 ## Data (Azure Table Storage, account `caa900brokervaultdocs`)

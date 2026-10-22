@@ -59,6 +59,11 @@
   .flex { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--char); color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; }
   .toast.show { opacity: 1; }
+  .suggest { margin-top: 12px; background: var(--y-soft); border-radius: 10px; padding: 10px 12px; }
+  .suggest .note { display:block; margin-top:6px; }
+  .sugg { display:flex; align-items:center; gap:8px; justify-content:space-between; background:#fff; border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-top:8px; font-size:13px; }
+  .sugg b { font-size:15px; }
+  .sugg.best { border-color: var(--y); box-shadow: 0 0 0 2px var(--y-soft); }
 </style>
 </head>
 <body>
@@ -92,6 +97,11 @@
     <div class="row2">
       <div><label>Applicant income <span class="src">T4 / NOA / pay stub</span></label><input type="number" id="inc1" min="0" step="1000"></div>
       <div><label>Co-applicant income <span class="src">T4 / NOA</span></label><input type="number" id="inc2" min="0" step="1000"></div>
+    </div>
+    <div class="suggest" id="suggestBox">
+      <button class="btn ghost" id="readBtn" type="button">Read income from documents</button>
+      <span class="note">Reads the client's T4, NOA and pay stub PDFs. You confirm before it is used.</span>
+      <div id="suggestions"></div>
     </div>
 
     <h3>Monthly debts</h3>
@@ -317,6 +327,7 @@ async function selectClient(id) {
     savedAt: saved ? saved.savedAt : null,
   };
   $("client").value = id;
+  $("suggestions").innerHTML = "";
   fillInputs(current.values); renderDocs(); render();
   $("notes").value = saved ? saved.notes || "" : "";
 }
@@ -327,6 +338,22 @@ function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add
 $("client").onchange = (e) => selectClient(e.target.value).catch(err => toast(err.message));
 FIELDS.forEach(f => $(f).addEventListener("input", render));
 $("resetBtn").onclick = () => { fillInputs(current.values); render(); toast("Reset to client file values"); };
+$("readBtn").onclick = async () => {
+  const out = $("suggestions");
+  out.innerHTML = '<div class="note" style="margin-top:8px">Reading documents…</div>';
+  try {
+    const r = await api(`owner/clients/${encodeURIComponent(current.id)}/income`);
+    const rows = r.suggestions.map((s, i) => `
+      <div class="sugg ${i === 0 ? "best" : ""}">
+        <span>${i === 0 ? "<b>Suggested</b> · " : ""}${esc(s.source)}: <b>${money(s.annual)}</b> / year<br><span class="note" style="margin:0">${esc(s.detail)} · ${esc(s.fileName)}</span></span>
+        <span><button class="btn ghost" type="button" data-open="${s.docId}">Open</button> <button class="btn" type="button" data-use="${s.annual}">Use</button></span>
+      </div>`).join("");
+    const notes = r.notes.map((n) => `<div class="note" style="margin-top:6px">⚠ ${esc(n)}</div>`).join("");
+    out.innerHTML = rows || notes ? rows + notes : '<div class="note" style="margin-top:8px">No T4, NOA or pay stub PDF uploaded yet for this client.</div>';
+    out.querySelectorAll("button[data-use]").forEach(b => b.onclick = () => { $("inc1").value = b.dataset.use; render(); toast("Applicant income filled from the document. Check it before saving."); });
+    out.querySelectorAll("button[data-open]").forEach(b => b.onclick = () => download(b.dataset.open, current.id).catch(e => toast(e.message)));
+  } catch (e) { out.innerHTML = `<div class="note" style="margin-top:8px">${esc(e.message)}</div>`; }
+};
 $("saveBtn").onclick = async () => {
   const { v, r } = render();
   try {
