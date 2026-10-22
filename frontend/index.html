@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BrokerVault · Secure mortgage documents</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header><a class="logo" href="/">BV</a><h1>BrokerVault</h1><nav id="nav"></nav></header>
+<main>
+  <div class="msg" id="loginMsg"></div>
+  <div class="hero">
+    <div class="card">
+      <h2>Send your mortgage documents securely, and see what is still missing.</h2>
+      <p class="muted">BrokerVault replaces email and WhatsApp attachments for <b>Maria Chen, independent mortgage agent</b>. Your pay stubs, T4s and bank statements go straight into encrypted, private storage in Canada. Only you and Maria can open them.</p>
+      <div class="stack" id="signin">
+        <b>Clients: sign in or create your account</b>
+        <div class="row">
+          <a class="btn" href="/.auth/login/aad?post_login_redirect_uri=/client.html">Continue with Microsoft</a>
+          <a class="btn ghost" href="/.auth/login/github?post_login_redirect_uri=/client.html">Continue with GitHub</a>
+        </div>
+        <span class="muted">Your first sign-in creates your client file.</span>
+        <hr style="border:none;border-top:1px solid var(--line);width:100%">
+        <b>Agent</b>
+        <div class="row"><a class="btn dark" href="/.auth/login/aad?post_login_redirect_uri=/owner.html">Agent sign in (Maria)</a></div>
+      </div>
+      <div class="stack" id="signedin" style="display:none"></div>
+    </div>
+    <div class="stack">
+      <div class="quote">"Every client has to send me ten or more documents… I never know who is still missing what, and I'm nervous about bank statements and SINs sitting in my email."<small>Maria Chen, the owner</small></div>
+      <div class="card">
+        <h2>How it works</h2>
+        <ol class="muted" style="margin:0;padding-left:18px;line-height:1.7">
+          <li>Sign in and see your personal checklist.</li>
+          <li>Upload each document (PDF, JPG or PNG, up to 10 MB).</li>
+          <li>Files go directly to private storage through a link that expires in 5 minutes.</li>
+          <li>Maria sees your progress and reviews your file.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</main>
+<footer>BrokerVault · CAA900 capstone · Team BrokerVault · Fictional data only</footer>
+<script src="/app.js"></script>
+<script>
+(async () => {
+  if (new URLSearchParams(location.search).get("login") === "required") show(document.getElementById("loginMsg"), "Please sign in to continue.", "err");
+  const p = await whoAmI();
+  if (!p) return;
+  const owner = p.userRoles.includes("owner");
+  document.getElementById("signin").style.display = "none";
+  const s = document.getElementById("signedin"); s.style.display = "flex";
+  s.innerHTML = `<b>Signed in as ${esc(p.userDetails)}</b>
+    <div class="row">${owner ? '<a class="btn dark" href="/owner.html">Open agent dashboard</a>' : ""}<a class="btn" href="/client.html">My documents</a>
+    <a class="btn ghost" href="/.auth/logout?post_logout_redirect_uri=/">Sign out</a></div>`;
+  document.getElementById("nav").innerHTML = `<a href="/.auth/logout?post_logout_redirect_uri=/">Sign out</a>`;
+})();
+</script>
+</body>
+</html>

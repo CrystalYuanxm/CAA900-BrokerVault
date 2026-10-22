@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BrokerVault · My documents</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header><a class="logo" href="/">BV</a><h1>My documents</h1>
+  <nav><span id="who"></span><a id="ownerLink" href="/owner.html" style="display:none">Agent dashboard</a><a href="/.auth/logout?post_logout_redirect_uri=/">Sign out</a></nav></header>
+<main>
+  <div class="card">
+    <h2 id="title">Your document checklist</h2>
+    <div class="progress"><div id="bar" style="width:0"></div></div>
+    <p class="muted" id="summary">Loading…</p>
+    <div class="msg" id="msg"></div>
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>Document</th><th>Status</th><th>Last upload</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="muted" style="margin-top:12px">PDF, JPG or PNG, up to 10 MB. Files are encrypted and stored privately in Canada. Upload links expire after 5 minutes.</p>
+  </div>
+</main>
+<input type="file" id="picker" accept=".pdf,.jpg,.jpeg,.png" style="display:none">
+<footer>BrokerVault · Only you and your mortgage agent can open your files.</footer>
+<script src="/app.js"></script>
+<script>
+const msg = document.getElementById("msg");
+let pendingType = null;
+
+async function load() {
+  const me = await api("me");
+  document.getElementById("who").textContent = me.name;
+  if (me.isOwner) document.getElementById("ownerLink").style.display = "inline";
+  if (me.isNew) show(msg, "Welcome! Your client file has been created.", "ok");
+  const cl = await api("checklist");
+  document.getElementById("bar").style.width = `${(cl.received / cl.total) * 100}%`;
+  document.getElementById("summary").textContent = cl.received === cl.total
+    ? "All documents received. Maria will review your file."
+    : `${cl.received} of ${cl.total} documents received. ${cl.total - cl.received} still missing.`;
+  document.getElementById("rows").innerHTML = cl.items.map((i) => `
+    <tr>
+      <td><b>${esc(i.label)}</b>${i.fileName ? `<br><span class="muted">${esc(i.fileName)}</span>` : ""}</td>
+      <td><span class="pill ${i.status === "received" ? "ok" : "miss"}">${i.status === "received" ? "Received" : "Missing"}</span></td>
+      <td class="muted">${fmtDate(i.uploadedAt)}</td>
+      <td style="text-align:right">
+        ${i.docId && !i.demo ? `<button class="btn ghost" onclick="download('${i.docId}')">View</button>` : ""}
+        <button class="btn" onclick="pick('${i.key}')">${i.status === "received" ? "Replace" : "Upload"}</button>
+      </td>
+    </tr>`).join("");
+}
+
+function pick(type) { pendingType = type; const p = document.getElementById("picker"); p.value = ""; p.click(); }
+
+document.getElementById("picker").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file || !pendingType) return;
+  try {
+    show(msg, `Uploading ${file.name}…`, "ok");
+    // 1. ask the API for a one-time, write-only upload link
+    const slot = await api("upload-url", { method: "POST", body: { docType: pendingType, fileName: file.name, size: file.size } });
+    // 2. upload straight to private Blob Storage (the file never passes through the API)
+    const put = await fetch(slot.uploadUrl, { method: "PUT", headers: { "x-ms-blob-type": "BlockBlob", "Content-Type": slot.contentType }, body: file });
+    if (!put.ok) throw new Error(`Storage upload failed (${put.status})`);
+    // 3. record it in the database so the checklist updates
+    await api("documents", { method: "POST", body: { blobName: slot.blobName, docType: pendingType, fileName: file.name } });
+    show(msg, `${file.name} uploaded.`, "ok");
+    await load();
+  } catch (err) { show(msg, err.message, "err"); }
+});
+
+load().catch((e) => show(msg, e.message, "err"));
+</script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BrokerVault · Agent dashboard</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header><a class="logo" href="/">BV</a><h1>Agent dashboard</h1>
+  <nav><span id="who"></span><a href="/calculator.html">Affordability review</a><a href="/client.html">Client view</a><a href="/.auth/logout?post_logout_redirect_uri=/">Sign out</a></nav></header>
+<main>
+  <div class="stats">
+    <div class="stat"><b id="sClients">–</b>clients</div>
+    <div class="stat"><b id="sComplete">–</b>complete files</div>
+    <div class="stat"><b id="sWaiting">–</b>waiting on documents</div>
+  </div>
+  <div class="msg" id="msg"></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2 style="margin:0">Clients</h2>
+        <div class="row"><button class="btn ghost" id="seed">Load sample clients</button><button class="btn ghost" id="refresh">Refresh</button></div></div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Client</th><th>Received</th><th>Last upload</th></tr></thead>
+        <tbody id="clients"><tr><td colspan="3" class="muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card" id="detail">
+      <h2>Client file</h2>
+      <p class="muted">Select a client to see their checklist and documents.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Audit log <span class="muted" style="font-weight:400;font-size:13px">(who did what: sign-ups, uploads, views, downloads)</span></h2>
+    <table><thead><tr><th>When</th><th>Who</th><th>Action</th></tr></thead><tbody id="audit"></tbody></table>
+  </div>
+</main>
+<footer>BrokerVault · Owner view · Every download is logged</footer>
+<script src="/app.js"></script>
+<script>
+const msg = document.getElementById("msg");
+async function loadClients() {
+  const data = await api("owner/clients");
+  document.getElementById("sClients").textContent = data.summary.clients;
+  document.getElementById("sComplete").textContent = data.summary.complete;
+  document.getElementById("sWaiting").textContent = data.summary.waiting;
+  document.getElementById("clients").innerHTML = data.clients.length ? data.clients.map((c) => `
+    <tr class="click" onclick="openClient('${encodeURIComponent(c.clientId)}')">
+      <td><b>${esc(c.name)}</b> ${c.demo ? '<span class="pill demo">sample</span>' : ""}<br><span class="muted" style="font-size:13px">${c.missing.length ? "Missing: " + esc(c.missing.join(", ")) : "All received"}</span></td>
+      <td><span class="pill ${c.received === c.total ? "ok" : "miss"}">${c.received} / ${c.total}</span></td>
+      <td class="muted">${fmtDate(c.lastUpload)}</td>
+    </tr>`).join("") : '<tr><td colspan="3" class="muted">No clients yet. Ask a client to sign in, or load the sample clients.</td></tr>';
+}
+async function openClient(id) {
+  const d = await api(`owner/clients/${id}/documents`);
+  document.getElementById("detail").innerHTML = `
+    <h2>${esc(d.client.name)}</h2>
+    <div class="progress"><div style="width:${(d.checklist.received / d.checklist.total) * 100}%"></div></div>
+    <p class="muted">${d.checklist.received} of ${d.checklist.total} received · client since ${fmtDate(d.client.createdAt)}</p>
+    <table>${d.checklist.items.map((i) => `<tr><td>${esc(i.label)}</td><td><span class="pill ${i.status === "received" ? "ok" : "miss"}">${i.status}</span></td>
+      <td style="text-align:right">${i.docId && !i.demo ? `<button class="btn ghost" onclick="download('${i.docId}','${id}')">Download</button>` : i.demo ? '<span class="muted">sample</span>' : ""}</td></tr>`).join("")}</table>
+    <div class="row" style="margin-top:12px"><a class="btn" href="/calculator.html">Open affordability review</a></div>`;
+  loadAudit();
+}
+async function loadAudit() {
+  const a = await api("owner/audit");
+  document.getElementById("audit").innerHTML = a.entries.slice(0, 15).map((e) => `<tr><td class="muted">${fmtDate(e.when)}</td><td>${esc(e.actor)}</td><td><code>${esc(e.action)}</code></td></tr>`).join("") || '<tr><td colspan="3" class="muted">No activity yet.</td></tr>';
+}
+document.getElementById("seed").onclick = async () => { await api("owner/seed", { method: "POST" }); show(msg, "Three fictional sample clients loaded.", "ok"); loadClients(); loadAudit(); };
+document.getElementById("refresh").onclick = () => { loadClients(); loadAudit(); };
+(async () => {
+  const p = await whoAmI();
+  if (p) document.getElementById("who").textContent = p.userDetails;
+  await loadClients(); await loadAudit();
+})().catch((e) => show(msg, e.message, "err"));
+</script>
+</body>
+</html>
