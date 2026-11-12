@@ -5,7 +5,8 @@
 |---|---|
 | [api.md](api.md) | Every API route and the four tables |
 | [architecture-v1.png](architecture-v1.png) | Architecture as deployed |
-| [adr/](adr/) | Decisions: 0001 Functions on consumption, 0002 built-in sign-in, 0003 Table Storage, 0004 Bicep |
+| [adr/](adr/) | Decisions: 0001 Functions on consumption, 0002 built-in sign-in, 0003 Table Storage, 0004 Bicep, 0005 storage key instead of managed identity, 0006 reminders from Maria's mailbox |
+| [runbooks/](runbooks/) | Recovery test, storage key rotation |
 | [tagging-and-naming.md](tagging-and-naming.md) | Names and tags of every resource |
 | [cost-log.md](cost-log.md) | Spend per check |
 | [evidence/](evidence/) | Deployment log and screenshots |
@@ -20,4 +21,4 @@
 | [week-03-checkin-prep.md](week-03-checkin-prep.md) | Week 3 check-in |
 | [readiness-gap-analysis.md](readiness-gap-analysis.md) | Week 3 check-in |
 
-What changed since v0, and why, is in ADRs 0002 to 0004.
+What changed since v0, and why, is in ADRs 0002 to 0006.

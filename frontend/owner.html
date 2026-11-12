@@ -45,7 +45,7 @@ async function loadClients() {
   document.getElementById("sWaiting").textContent = data.summary.waiting;
   document.getElementById("clients").innerHTML = data.clients.length ? data.clients.map((c) => `
     <tr class="click" onclick="openClient('${encodeURIComponent(c.clientId)}')">
-      <td><b>${esc(c.name)}</b> ${c.demo ? '<span class="pill demo">sample</span>' : ""}<br><span class="muted" style="font-size:13px">${c.missing.length ? "Missing: " + esc(c.missing.join(", ")) : "All received"}</span></td>
+      <td><b>${esc(c.name)}</b> ${c.demo ? '<span class="pill demo">sample</span>' : ""}<br><span class="muted" style="font-size:13px">${c.missing.length ? "Missing: " + esc(c.missing.join(", ")) : "All received"}${c.lastReminderAt ? " · reminded " + fmtDate(c.lastReminderAt) : ""}</span></td>
       <td><span class="pill ${c.received === c.total ? "ok" : "miss"}">${c.received} / ${c.total}</span></td>
       <td class="muted">${fmtDate(c.lastUpload)}</td>
     </tr>`).join("") : '<tr><td colspan="3" class="muted">No clients yet. Ask a client to sign in, or load the sample clients.</td></tr>';
@@ -56,10 +56,36 @@ async function openClient(id) {
     <h2>${esc(d.client.name)}</h2>
     <div class="progress"><div style="width:${(d.checklist.received / d.checklist.total) * 100}%"></div></div>
     <p class="muted">${d.checklist.received} of ${d.checklist.total} received · client since ${fmtDate(d.client.createdAt)}</p>
+    <p class="muted" id="remindInfo">${d.client.lastReminderAt ? `Last reminder ${fmtDate(d.client.lastReminderAt)} (${d.client.reminderCount} sent)` : "No reminder sent yet"}</p>
     <table>${d.checklist.items.map((i) => `<tr><td>${esc(i.label)}</td><td><span class="pill ${i.status === "received" ? "ok" : "miss"}">${i.status}</span></td>
       <td style="text-align:right">${i.docId && !i.demo ? `<button class="btn ghost" onclick="download('${i.docId}','${id}')">Download</button>` : i.demo ? '<span class="muted">sample</span>' : ""}</td></tr>`).join("")}</table>
-    <div class="row" style="margin-top:12px"><a class="btn" href="/calculator.html?client=${id}">Open affordability review</a></div>`;
+    <div class="row" style="margin-top:12px">
+      ${d.checklist.received < d.checklist.total ? `<button class="btn ghost" onclick="sendReminder('${id}')">Send reminder</button>` : ""}
+      <a class="btn" href="/calculator.html?client=${id}">Open affordability review</a></div>`;
   loadAudit();
+}
+// Reminder: the API records it and returns the missing documents; the email opens in Maria's own mail app.
+async function sendReminder(id) {
+  let r;
+  try { r = await api(`owner/clients/${id}/reminder`, { method: "POST" }); } catch (e) { return show(msg, e.message, "err"); }
+  const subject = `Documents still needed for your mortgage file (${r.received} of ${r.total} received)`;
+  const body = [
+    "Hello,",
+    "",
+    "Thank you for the documents you have sent so far. To complete your mortgage file I still need:",
+    "",
+    ...r.missing.map((m) => `- ${m}`),
+    "",
+    `Please upload them securely here (PDF, JPG or PNG): ${location.origin}/client.html`,
+    "Please do not send them by email.",
+    "",
+    "Thank you,",
+    "Maria",
+  ].join("\n");
+  location.href = `mailto:${r.to ? encodeURIComponent(r.to) : ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  document.getElementById("remindInfo").textContent = `Last reminder ${fmtDate(r.lastReminderAt)} (${r.reminderCount} sent)` + (r.to ? "" : " · add the client's email address in your mail app");
+  show(msg, r.to ? "Reminder opened in your mail app. Check it and press Send." : "Reminder opened in your mail app. This client signed in with GitHub, so add their email address, then press Send.", "ok");
+  loadClients(); loadAudit();
 }
 async function loadAudit() {
   const a = await api("owner/audit");

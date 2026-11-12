@@ -23,6 +23,7 @@ module.exports = async function (context, req) {
       missing: cl2.items.filter((i) => i.status === "missing").map((i) => i.label),
       lastUpload: last,
       createdAt: cl.createdAt,
+      lastReminderAt: cl.lastReminderAt || null,
     };
   });
   rows.sort((a, b) => a.received - b.received || String(a.name).localeCompare(b.name));

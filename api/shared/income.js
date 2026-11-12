@@ -1,5 +1,5 @@
 // Reads income figures from text-based PDFs (T4, Notice of Assessment, pay stub).
-// Scanned images are not supported here; Azure Document Intelligence is the planned upgrade.
+// Scans and phone photos go through Azure AI Document Intelligence (docIntelText) when it is configured.
 const pdfjs = require("pdfjs-dist/legacy/build/pdf.js");
 
 async function pdfText(buffer, maxPages = 3) {
@@ -21,14 +21,54 @@ async function pdfText(buffer, maxPages = 3) {
   return out;
 }
 
+// Azure AI Document Intelligence (prebuilt-read): OCR for scans and phone photos (JPG, PNG, image-only PDFs).
+// Used only when DOCINTEL_ENDPOINT and DOCINTEL_KEY are set. The free tier (F0) reads the first 2 pages, max 4 MB.
+const DOCINTEL_API = "2024-11-30";
+const DOCINTEL_MAX_BYTES = 4 * 1024 * 1024;
+const docIntelEnabled = () => !!(process.env.DOCINTEL_ENDPOINT && process.env.DOCINTEL_KEY);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function docIntelText(buffer, { timeoutMs = 25000 } = {}) {
+  if (!docIntelEnabled()) throw new Error("Document Intelligence is not configured");
+  if (buffer.length > DOCINTEL_MAX_BYTES) throw new Error("File is larger than 4 MB, the free tier limit");
+  const endpoint = process.env.DOCINTEL_ENDPOINT.replace(/\/+$/, "");
+  const headers = { "Ocp-Apim-Subscription-Key": process.env.DOCINTEL_KEY, "Content-Type": "application/json" };
+  const start = await fetch(`${endpoint}/documentintelligence/documentModels/prebuilt-read:analyze?api-version=${DOCINTEL_API}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ base64Source: buffer.toString("base64") }),
+  });
+  if (start.status !== 202) throw new Error(`Document Intelligence returned ${start.status}`);
+  const opUrl = start.headers.get("operation-location");
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await sleep(1000);
+    const res = await fetch(opUrl, { headers });
+    const body = await res.json();
+    if (body.status === "succeeded") return (body.analyzeResult && body.analyzeResult.content) || "";
+    if (body.status === "failed") throw new Error("Document Intelligence could not read this file");
+  }
+  throw new Error("Document Intelligence timed out");
+}
+
 const money = (s) => Number(String(s).replace(/[$,\s]/g, ""));
 const AMOUNT = "\\$?\\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\\.[0-9]{2})?|[0-9]+(?:\\.[0-9]{2})?)";
 
-// First amount that follows one of the labels on the same line
+// First amount that follows one of the labels: same line first, then the next lines
+// (OCR of scans often puts the box number and the value on the lines below the label).
+// Box numbers such as "14" are skipped: an amount must have a $, a comma, cents, or be 100 or more.
+const looksLikeMoney = (raw) => /[$,.]/.test(raw) || money(raw) >= 100;
 function find(text, labels) {
-  for (const label of labels) {
-    const m = text.match(new RegExp(`${label}[^0-9$\\n]{0,40}${AMOUNT}`, "i"));
-    if (m) return money(m[1]);
+  for (const window of [/^[^\n]{0,60}/, /^[\s\S]{0,80}/]) {
+    for (const label of labels) {
+      const re = new RegExp(label, "ig");
+      let m;
+      while ((m = re.exec(text))) {
+        const after = text.slice(m.index + m[0].length).match(window)[0];
+        const amounts = [...after.matchAll(new RegExp(AMOUNT, "g"))].map((a) => a[0].trim()).filter(looksLikeMoney);
+        if (amounts.length) return money(amounts[0]);
+      }
+    }
   }
   return null;
 }
@@ -75,4 +115,4 @@ function extractIncome(text, docType) {
   return null;
 }
 
-module.exports = { pdfText, extractIncome, payFrequency };
+module.exports = { pdfText, extractIncome, payFrequency, docIntelText, docIntelEnabled };

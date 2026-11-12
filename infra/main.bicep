@@ -20,6 +20,14 @@ param webLocation string = 'eastus2'
 @description('Email that receives monitoring alerts. Passed at deploy time; not stored in the repository.')
 param alertEmail string
 
+@description('Which storage key the API uses (0 = key1, 1 = key2). Switch it to rotate keys without downtime; see docs/runbooks/rotate-storage-key.md.')
+@allowed([ 0, 1 ])
+param storageKeyIndex int = 0
+
+@description('Document Intelligence tier: F0 is free (500 pages a month, first 2 pages per file). Only one F0 per subscription.')
+@allowed([ 'F0', 'S0' ])
+param docIntelSku string = 'F0'
+
 var tags = {
   Project: 'CAA900'
   Team: team
@@ -198,14 +206,31 @@ resource failedRequestsAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
   }
 }
 
+// ---------- Document Intelligence: OCR for scanned or photographed income documents ----------
+resource docIntel 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
+  name: 'caa900-${team}-docintel'
+  location: location
+  tags: tags
+  kind: 'FormRecognizer'
+  sku: {
+    name: docIntelSku
+  }
+  properties: {
+    customSubDomainName: 'caa900-${team}-docintel'
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
 // ---------- API settings (stored encrypted by Azure, never in the repo) ----------
 resource webSettings 'Microsoft.Web/staticSites/config@2023-01-01' = {
   parent: web
   name: 'appsettings'
   properties: {
-    STORAGE_CONNECTION_STRING: 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+    STORAGE_CONNECTION_STRING: 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[storageKeyIndex].value};EndpointSuffix=${environment().suffixes.storage}'
     DOCS_CONTAINER: containerName
     APPLICATIONINSIGHTS_CONNECTION_STRING: appInsights.properties.ConnectionString
+    DOCINTEL_ENDPOINT: docIntel.properties.endpoint
+    DOCINTEL_KEY: docIntel.listKeys().key1
   }
 }
 
@@ -213,3 +238,4 @@ output webUrl string = 'https://${web.properties.defaultHostname}'
 output webName string = web.name
 output storageAccount string = storage.name
 output appInsightsName string = appInsights.name
+output docIntelName string = docIntel.name

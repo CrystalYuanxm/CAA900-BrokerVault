@@ -1,8 +1,9 @@
 // GET /api/owner/clients/{clientId}/income  (owner only)
-// Reads the client's latest T4, Notice of Assessment and pay stub PDFs and suggests an annual income.
+// Reads the client's latest T4, Notice of Assessment and pay stub (PDF text, or OCR for scans and photos)
+// and suggests an annual income.
 // The suggestion is never applied automatically: Maria reviews it and clicks "Use".
 const c = require("../shared/core");
-const { pdfText, extractIncome } = require("../shared/income");
+const { pdfText, extractIncome, docIntelText, docIntelEnabled } = require("../shared/income");
 const PRIORITY = { T4: 1, "Notice of Assessment": 2, "Pay stub": 3 };
 
 module.exports = async function (context, req) {
@@ -20,19 +21,41 @@ module.exports = async function (context, req) {
   const suggestions = [];
   const notes = [];
   for (const d of Object.values(latest)) {
-    if (!/pdf/i.test(d.contentType || "") && !/\.pdf$/i.test(d.blobName)) {
-      notes.push(`${d.fileName}: image file, cannot read text yet (enter manually)`);
+    const isPdf = /pdf/i.test(d.contentType || "") || /\.pdf$/i.test(d.blobName);
+    let buf;
+    try {
+      buf = await c.container().getBlockBlobClient(d.blobName).downloadToBuffer();
+    } catch {
+      notes.push(`${d.fileName}: file could not be opened (enter manually)`);
       continue;
     }
-    try {
-      const buf = await c.container().getBlockBlobClient(d.blobName).downloadToBuffer();
-      const text = await pdfText(buf);
-      const r = extractIncome(text, d.docType);
-      if (r && r.annual) suggestions.push({ source: r.kind, docId: d.rowKey, fileName: d.fileName, annual: r.annual, detail: r.detail });
-      else notes.push(`${d.fileName}: ${r ? r.detail : "no income figure found"} (enter manually)`);
-    } catch (e) {
-      notes.push(`${d.fileName}: could not read this PDF (it may be a scan); enter manually`);
+    // 1. Text-based PDF: read the text layer (fast, free)
+    let text = "";
+    let method = "PDF text";
+    if (isPdf) {
+      try {
+        text = await pdfText(buf);
+      } catch {
+        text = "";
+      }
     }
+    // 2. Scan or photo: no usable text, so use Document Intelligence OCR (if configured)
+    if (text.replace(/\s/g, "").length < 20) {
+      if (!docIntelEnabled()) {
+        notes.push(`${d.fileName}: ${isPdf ? "scanned PDF" : "image file"}, no text to read (enter manually)`);
+        continue;
+      }
+      try {
+        text = await docIntelText(buf);
+        method = "Document Intelligence OCR";
+      } catch (e) {
+        notes.push(`${d.fileName}: ${e.message} (enter manually)`);
+        continue;
+      }
+    }
+    const r = extractIncome(text, d.docType);
+    if (r && r.annual) suggestions.push({ source: r.kind, docId: d.rowKey, fileName: d.fileName, annual: r.annual, detail: `${r.detail} · read by ${method}`, method });
+    else notes.push(`${d.fileName}: ${r ? r.detail : "no income figure found"} (read by ${method}; enter manually)`);
   }
   suggestions.sort((a, b) => PRIORITY[a.source] - PRIORITY[b.source]);
   await c.audit(p, "income-read", clientId);

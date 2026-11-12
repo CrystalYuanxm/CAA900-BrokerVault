@@ -19,6 +19,10 @@ Pattern: `caa900-<team>-<purpose>`. Region: `canadacentral` for every resource t
 | Storage account (documents + tables) | `caa900brokervaultdocs` | 3 to 24 lowercase letters and digits, no hyphens, globally unique (the earlier name `caa900brokervaultup` stayed reserved after deletion) |
 | Blob container | `client-documents` | private, no anonymous access |
 | Tables | `Clients`, `Documents`, `Audit`, `Reviews` | inside the storage account |
+| Log Analytics workspace | `caa900-brokervault-logs` | 30-day retention, 1 GB daily cap |
+| Application Insights | `caa900-brokervault-insights` | linked to the API through app settings |
+| Action group and alert | `caa900-brokervault-alerts` / `caa900-brokervault-api-failures` | emails the owner on API server errors |
+| Document Intelligence | `caa900-brokervault-docintel` | F0 (free), OCR for scans and photos |
 | Budget | `caa900-brokervault-monthly` | one per subscription; alerts at 50% and 80% |
 | Deployment | `brokervault-deploy` | name of the Bicep deployment |
 

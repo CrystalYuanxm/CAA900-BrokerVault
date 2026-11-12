@@ -13,13 +13,14 @@ All routes are under `/api` on the Static Web App. The caller must be signed in,
 | `GET /api/owner/clients/{id}/documents` | Owner | One client's checklist and documents. |
 | `POST /api/owner/seed` | Owner | Adds three fictional sample clients for demos. |
 | `GET /api/owner/audit` | Owner | The latest 50 audit entries. |
-| `GET /api/owner/clients/{id}/income` | Owner | Reads the latest T4, NOA and pay stub PDFs (text layer) and suggests an annual income; Maria confirms it before it is used. Audited. |
+| `GET /api/owner/clients/{id}/income` | Owner | Reads the latest T4, NOA and pay stub and suggests an annual income: the PDF text layer first, and Azure AI Document Intelligence (prebuilt-read OCR) for scans and photos. Maria confirms it before it is used. Audited. |
+| `POST /api/owner/clients/{id}/reminder` | Owner | Records a reminder (`lastReminderAt`, `reminderCount`, audit `reminder-sent`) and returns the missing documents and the client's email when known; the dashboard opens Maria's mail app with the email written. |
 | `GET/POST /api/owner/reviews` | Owner | Load or save the affordability review (GDS/TDS, stress test, CMHC) for a client; every save is audited. |
 
 ## Data (Azure Table Storage, account `caa900brokervaultdocs`)
 | Table | PartitionKey | RowKey | Holds |
 |---|---|---|---|
-| `Clients` | `client` | user id | name, identity provider, createdAt, lastSeen |
+| `Clients` | `client` | user id | name, identity provider, createdAt, lastSeen, lastReminderAt, reminderCount |
 | `Documents` | user id | document id | docType, fileName, blobName, size, uploadedAt |
 | `Audit` | date | time and GUID | actor, action, target |
 | `Reviews` | client id | `latest` or `h-<time>` | affordability inputs, result, notes, savedBy |

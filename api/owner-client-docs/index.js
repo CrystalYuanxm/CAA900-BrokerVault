@@ -14,7 +14,7 @@ module.exports = async function (context, req) {
   const docs = await c.listDocs(clientId);
   await c.audit(p, "view-client", clientId);
   context.res = c.json(200, {
-    client: { clientId, name: client.name, createdAt: client.createdAt, demo: !!client.demo },
+    client: { clientId, name: client.name, createdAt: client.createdAt, demo: !!client.demo, lastReminderAt: client.lastReminderAt || null, reminderCount: client.reminderCount || 0 },
     checklist: c.checklistFor(docs),
     documents: docs
       .map((d) => ({ docId: d.rowKey, docType: d.docType, fileName: d.fileName, size: d.size, uploadedAt: d.uploadedAt, demo: !!d.demo }))
