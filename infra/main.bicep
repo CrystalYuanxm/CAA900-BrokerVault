@@ -1,5 +1,5 @@
 // BrokerVault infrastructure (CAA900, team brokervault)
-// Deploy:  az deployment group create -g caa900-brokervault-rg -f infra/main.bicep
+// Deploy:  az deployment group create -g caa900-brokervault-rg -f infra/main.bicep -p alertEmail=<your email>
 // Creates: private storage (blob container + tables) in Canada Central,
 //          Azure Static Web App (Free) with managed Functions API,
 //          app settings for the API, and CORS limited to the web app's URL.
@@ -16,6 +16,9 @@ param location string = resourceGroup().location
 @description('Static Web Apps is offered only in a few regions; it hosts static files and the API code, not client data.')
 @allowed([ 'eastus2', 'centralus', 'westus2', 'westeurope', 'eastasia' ])
 param webLocation string = 'eastus2'
+
+@description('Email that receives monitoring alerts. Passed at deploy time; not stored in the repository.')
+param alertEmail string
 
 var tags = {
   Project: 'CAA900'
@@ -118,6 +121,83 @@ resource reviewsTable 'Microsoft.Storage/storageAccounts/tableServices/tables@20
   name: 'Reviews'
 }
 
+// ---------- Monitoring: logs + one alert on failed API requests ----------
+resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
+  name: 'caa900-${team}-logs'
+  location: location
+  tags: tags
+  properties: {
+    sku: {
+      name: 'PerGB2018'
+    }
+    retentionInDays: 30
+    workspaceCapping: {
+      dailyQuotaGb: 1 // hard cap so a bug cannot run up the bill
+    }
+  }
+}
+
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: 'caa900-${team}-insights'
+  location: location
+  tags: tags
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logs.id
+  }
+}
+
+resource alertGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
+  name: 'caa900-${team}-alerts'
+  location: 'global'
+  tags: tags
+  properties: {
+    groupShortName: 'bvalerts'
+    enabled: true
+    emailReceivers: [
+      {
+        name: 'owner-email'
+        emailAddress: alertEmail
+        useCommonAlertSchema: true
+      }
+    ]
+  }
+}
+
+resource failedRequestsAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+  name: 'caa900-${team}-api-failures'
+  location: 'global'
+  tags: tags
+  properties: {
+    description: 'The API returned server errors (5xx) in the last 15 minutes.'
+    severity: 2
+    enabled: true
+    scopes: [ appInsights.id ]
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT15M'
+    criteria: {
+      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+      allOf: [
+        {
+          name: 'failed-requests'
+          criterionType: 'StaticThresholdCriterion'
+          metricNamespace: 'microsoft.insights/components'
+          metricName: 'requests/failed'
+          operator: 'GreaterThan'
+          threshold: 0
+          timeAggregation: 'Count'
+        }
+      ]
+    }
+    actions: [
+      {
+        actionGroupId: alertGroup.id
+      }
+    ]
+  }
+}
+
 // ---------- API settings (stored encrypted by Azure, never in the repo) ----------
 resource webSettings 'Microsoft.Web/staticSites/config@2023-01-01' = {
   parent: web
@@ -125,9 +205,11 @@ resource webSettings 'Microsoft.Web/staticSites/config@2023-01-01' = {
   properties: {
     STORAGE_CONNECTION_STRING: 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
     DOCS_CONTAINER: containerName
+    APPLICATIONINSIGHTS_CONNECTION_STRING: appInsights.properties.ConnectionString
   }
 }
 
 output webUrl string = 'https://${web.properties.defaultHostname}'
 output webName string = web.name
 output storageAccount string = storage.name
+output appInsightsName string = appInsights.name
