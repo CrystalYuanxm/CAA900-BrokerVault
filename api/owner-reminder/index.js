@@ -3,7 +3,16 @@
 // (when their sign-in gives one) and the documents still missing. The email itself is sent from
 // Maria's own mailbox (mailto link in the dashboard), so no email service or extra cost is needed.
 const c = require("../shared/core");
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Simple email check without a regular expression (no backtracking): one "@", a dot in the domain, no spaces.
+function isEmail(s) {
+  s = String(s || "");
+  if (s.length > 254 || /\s/.test(s)) return false;
+  const at = s.indexOf("@");
+  if (at < 1 || at !== s.lastIndexOf("@")) return false;
+  const domain = s.slice(at + 1);
+  const dot = domain.lastIndexOf(".");
+  return dot > 0 && dot < domain.length - 1;
+}
 
 module.exports = async function (context, req) {
   const p = c.getPrincipal(req);
@@ -29,7 +38,7 @@ module.exports = async function (context, req) {
   await c.audit(p, "reminder-sent", clientId);
 
   context.res = c.json(200, {
-    to: EMAIL.test(client.name || "") ? client.name : null, // GitHub sign-ins give a user name, not an email
+    to: isEmail(client.name) ? client.name : null, // GitHub sign-ins give a user name, not an email
     name: client.name,
     missing,
     received: checklist.received,

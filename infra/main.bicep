@@ -13,8 +13,7 @@ param env string = 'dev'
 @description('Region for data (storage). Canadian financial data stays in Canada.')
 param location string = resourceGroup().location
 
-@description('Static Web Apps is offered only in a few regions; it hosts static files and the API code, not client data.')
-@allowed([ 'eastus2', 'centralus', 'westus2', 'westeurope', 'eastasia' ])
+@description('Static Web Apps is offered only in a few regions (for example eastus2, centralus, westus2, westeurope, eastasia); it hosts static files and the API code, not client data.')
 param webLocation string = 'eastus2'
 
 @description('Email that receives monitoring alerts. Passed at deploy time; not stored in the repository.')
@@ -59,7 +58,22 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   sku: {
     name: 'Standard_LRS'
   }
+  identity: {
+    type: 'SystemAssigned' // ready for customer-managed keys or role-based access
+  }
   properties: {
+    // Encryption at rest, stated explicitly (AES-256, Microsoft-managed keys)
+    encryption: {
+      keySource: 'Microsoft.Storage'
+      services: {
+        blob: {
+          enabled: true
+        }
+        file: {
+          enabled: true
+        }
+      }
+    }
     accessTier: 'Hot'
     allowBlobPublicAccess: false
     supportsHttpsTrafficOnly: true
@@ -214,6 +228,9 @@ resource docIntel 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
   kind: 'FormRecognizer'
   sku: {
     name: docIntelSku
+  }
+  identity: {
+    type: 'SystemAssigned'
   }
   properties: {
     customSubDomainName: 'caa900-${team}-docintel'

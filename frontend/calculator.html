@@ -95,8 +95,8 @@
 
     <h3>Income (gross, annual)</h3>
     <div class="row2">
-      <div><label>Applicant income <span class="src">T4 / NOA / pay stub</span></label><input type="number" id="inc1" min="0" step="1000"></div>
-      <div><label>Co-applicant income <span class="src">T4 / NOA</span></label><input type="number" id="inc2" min="0" step="1000"></div>
+      <div><label for="inc1">Applicant income <span class="src">T4 / NOA / pay stub</span></label><input type="number" id="inc1" min="0" step="1000"></div>
+      <div><label for="inc2">Co-applicant income <span class="src">T4 / NOA</span></label><input type="number" id="inc2" min="0" step="1000"></div>
     </div>
     <div class="suggest" id="suggestBox">
       <button class="btn ghost" id="readBtn" type="button">Read income from documents</button>
@@ -106,28 +106,28 @@
 
     <h3>Monthly debts</h3>
     <div class="row2">
-      <div><label>Car / personal loans <span class="src">Credit report</span></label><input type="number" id="loans" min="0" step="10"></div>
-      <div><label>Credit card balances (total) <span class="src">Credit report</span></label><input type="number" id="cards" min="0" step="100"></div>
-      <div><label>Lines of credit / other <span class="src">Bank statements</span></label><input type="number" id="other" min="0" step="10"></div>
-      <div><label>Counted card payment</label><input type="text" id="cardPay" disabled></div>
+      <div><label for="loans">Car / personal loans <span class="src">Credit report</span></label><input type="number" id="loans" min="0" step="10"></div>
+      <div><label for="cards">Credit card balances (total) <span class="src">Credit report</span></label><input type="number" id="cards" min="0" step="100"></div>
+      <div><label for="other">Lines of credit / other <span class="src">Bank statements</span></label><input type="number" id="other" min="0" step="10"></div>
+      <div><label for="cardPay">Counted card payment</label><input type="text" id="cardPay" disabled></div>
     </div>
 
     <h3>Down payment &amp; property</h3>
     <div class="row2">
-      <div><label>Down payment available <span class="src">Bank statements</span></label><input type="number" id="down" min="0" step="1000"></div>
-      <div><label>Property tax (annual) <span class="src">Listing / MLS</span></label><input type="number" id="tax" min="0" step="100"></div>
-      <div><label>Heating (monthly)</label><input type="number" id="heat" min="0" step="10"></div>
-      <div><label>Condo fees (monthly)</label><input type="number" id="condo" min="0" step="10"></div>
+      <div><label for="down">Down payment available <span class="src">Bank statements</span></label><input type="number" id="down" min="0" step="1000"></div>
+      <div><label for="tax">Property tax (annual) <span class="src">Listing / MLS</span></label><input type="number" id="tax" min="0" step="100"></div>
+      <div><label for="heat">Heating (monthly)</label><input type="number" id="heat" min="0" step="10"></div>
+      <div><label for="condo">Condo fees (monthly)</label><input type="number" id="condo" min="0" step="10"></div>
     </div>
 
     <h3>Mortgage terms</h3>
     <div class="row2">
-      <div><label>Contract rate (%)</label><input type="number" id="rate" min="0" step="0.01"></div>
-      <div><label>Amortization</label>
+      <div><label for="rate">Contract rate (%)</label><input type="number" id="rate" min="0" step="0.01"></div>
+      <div><label for="amort">Amortization</label>
         <select id="amort"><option value="25">25 years</option><option value="30">30 years</option></select></div>
-      <div><label>Buyer type</label>
+      <div><label for="buyer">Buyer type</label>
         <select id="buyer"><option value="first">First-time buyer</option><option value="repeat">Repeat buyer</option></select></div>
-      <div><label>Qualifying rate (stress test)</label><input type="text" id="qrate" disabled></div>
+      <div><label for="qrate">Qualifying rate (stress test)</label><input type="text" id="qrate" disabled></div>
     </div>
     <div class="warn" id="amortWarn"></div>
   </section>
@@ -162,7 +162,7 @@
 
     <div class="card" style="margin-top:14px">
       <h2>Agent notes</h2>
-      <textarea id="notes" placeholder="e.g. Verified T4 2025 and NOA 2025; bonus excluded (not guaranteed)."></textarea>
+      <textarea id="notes" aria-label="Agent notes" placeholder="e.g. Verified T4 2025 and NOA 2025; bonus excluded (not guaranteed)."></textarea>
       <div class="flex">
         <button class="btn" id="saveBtn">Save review</button>
         <button class="btn ghost" id="pdfBtn">Export PDF</button>
@@ -191,7 +191,7 @@ let CLIENTS = [];
 const RULES = { gds: 0.39, tds: 0.44, floor: 5.25, buffer: 2.0, cardPct: 0.03, condoPct: 0.5, cap: 1500000 };
 const FIELDS = ["inc1","inc2","loans","cards","other","down","tax","heat","condo","rate","amort","buyer"];
 const $ = (id) => document.getElementById(id);
-const money = (n) => isFinite(n) ? n.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }) : "—";
+const money = (n) => Number.isFinite(n) ? n.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }) : "—";
 const pct = (n) => (n * 100).toFixed(1) + "%";
 let current = null;
 let incomeSource = "Entered by the agent";
@@ -263,7 +263,7 @@ function calculate(v) {
 // ---------- UI ----------
 function readInputs() {
   const v = {};
-  FIELDS.forEach(f => { const el = $(f); v[f] = (f === "amort" || f === "buyer") ? el.value : (parseFloat(el.value) || 0); });
+  FIELDS.forEach(f => { const el = $(f); v[f] = (f === "amort" || f === "buyer") ? el.value : (Number.parseFloat(el.value) || 0); });
   return v;
 }
 function fillInputs(values) { FIELDS.forEach(f => $(f).value = values[f]); }

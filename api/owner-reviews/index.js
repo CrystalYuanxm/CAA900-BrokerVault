@@ -23,7 +23,7 @@ module.exports = async function (context, req) {
   if (!clientId || !inputs) return (context.res = c.bad("clientId and inputs are required"));
   try { await c.table("Clients").getEntity("client", c.safeKey(clientId)); } catch { return (context.res = c.json(404, { error: "Client not found" })); }
   const clean = { amort: String(inputs.amort) === "30" ? "30" : "25", buyer: inputs.buyer === "repeat" ? "repeat" : "first" };
-  for (const f of NUM_FIELDS) { const n = Number(inputs[f]); if (!isFinite(n) || n < 0 || n > 1e8) return (context.res = c.bad(`Invalid value for ${f}`)); clean[f] = n; }
+  for (const f of NUM_FIELDS) { const n = Number(inputs[f]); if (!Number.isFinite(n) || n < 0 || n > 1e8) return (context.res = c.bad(`Invalid value for ${f}`)); clean[f] = n; }
   const savedAt = new Date().toISOString();
   const entity = {
     partitionKey: c.safeKey(clientId),

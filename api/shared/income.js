@@ -31,7 +31,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function docIntelText(buffer, { timeoutMs = 25000 } = {}) {
   if (!docIntelEnabled()) throw new Error("Document Intelligence is not configured");
   if (buffer.length > DOCINTEL_MAX_BYTES) throw new Error("File is larger than 4 MB, the free tier limit");
-  const endpoint = process.env.DOCINTEL_ENDPOINT.replace(/\/+$/, "");
+  let endpoint = process.env.DOCINTEL_ENDPOINT;
+  while (endpoint.endsWith("/")) endpoint = endpoint.slice(0, -1);
   const headers = { "Ocp-Apim-Subscription-Key": process.env.DOCINTEL_KEY, "Content-Type": "application/json" };
   const start = await fetch(`${endpoint}/documentintelligence/documentModels/prebuilt-read:analyze?api-version=${DOCINTEL_API}`, {
     method: "POST",
@@ -52,7 +53,9 @@ async function docIntelText(buffer, { timeoutMs = 25000 } = {}) {
 }
 
 const money = (s) => Number(String(s).replace(/[$,\s]/g, ""));
-const AMOUNT = "\\$?\\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\\.[0-9]{2})?|[0-9]+(?:\\.[0-9]{2})?)";
+// An amount: optional "$" and one space, digits with optional thousands commas, optional cents.
+// Written so that no part can match the same characters two ways (linear time, no backtracking).
+const AMOUNT = "\\$?[ \\t]?(\\d[\\d,]*(?:\\.\\d\\d)?)";
 
 // First amount that follows one of the labels: same line first, then the next lines
 // (OCR of scans often puts the box number and the value on the lines below the label).
@@ -66,7 +69,9 @@ function find(text, labels) {
       while ((m = re.exec(text))) {
         const after = text.slice(m.index + m[0].length).match(window)[0];
         const amounts = [...after.matchAll(new RegExp(AMOUNT, "g"))].map((a) => a[0].trim()).filter(looksLikeMoney);
-        if (amounts.length) return money(amounts[0]);
+        // Prefer a formatted amount ($, comma or cents) over a bare number such as a line or box number
+        const formatted = amounts.find((a) => /[$,.]/.test(a));
+        if (formatted || amounts.length) return money(formatted || amounts[0]);
       }
     }
   }
