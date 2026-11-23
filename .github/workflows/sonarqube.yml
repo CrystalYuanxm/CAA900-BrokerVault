@@ -1,0 +1,30 @@
+# Code quality and security scan with SonarQube Cloud (free plan).
+# Runs on every push to main, on pull requests, and by hand (Actions > SonarQube scan > Run workflow).
+# The token is the encrypted repository secret SONAR_TOKEN; it is never written in this file.
+name: SonarQube scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  sonarqube:
+    name: SonarQube Cloud analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code (full history, so new issues are blamed on the right commit)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan with SonarQube Cloud
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
