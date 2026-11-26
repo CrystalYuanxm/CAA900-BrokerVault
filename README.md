@@ -29,7 +29,9 @@ A secure document portal for an independent mortgage agent and her clients. CAA9
 
 Based on reference **Pattern D (secure file intake)**.
 
-![Architecture v1](docs/architecture-v1.png)
+![Architecture (final)](docs/architecture-v2.png)
+
+Diagram source: [docs/architecture-v2.dot](docs/architecture-v2.dot) (Graphviz: `dot -Tpng -Gdpi=200 docs/architecture-v2.dot -o docs/architecture-v2.png`). Final report: [docs/final/](docs/final/). DR test log: [docs/evidence/dr-test-log.md](docs/evidence/dr-test-log.md).
 
 | Service | Role | Why |
 |---|---|---|
@@ -83,6 +85,28 @@ az staticwebapp secrets list -n caa900-brokervault-web --query properties.apiKey
 4. In the Static Web App, **Role management → Invite**, give the agent's account the role `owner`.
 
 Recovery test and key rotation: [docs/runbooks/](docs/runbooks/).
+
+## Run locally
+
+Prerequisites: Node.js 20, Azure Functions Core Tools v4, the Static Web Apps CLI (`npm i -g @azure/static-web-apps-cli`) and Azurite (`npm i -g azurite`).
+
+```bash
+azurite --silent --location .azurite &          # local Blob and Table storage
+cd api && npm install && cd ..
+# api/local.settings.json (git-ignored) sets the environment variables below
+swa start frontend --api-location api           # http://localhost:4280, with a mock sign-in page
+```
+
+## Environment variables (names only; values live in the Static Web App's app settings)
+
+| Name | Purpose |
+|---|---|
+| `STORAGE_CONNECTION_STRING` | Blob and Table Storage (written by Bicep from listKeys) |
+| `DOCS_CONTAINER` | Name of the private container (`client-documents`) |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | Sends API logs to Application Insights |
+| `DOCINTEL_ENDPOINT`, `DOCINTEL_KEY` | Azure AI Document Intelligence (OCR); optional |
+
+GitHub secrets: `AZURE_STATIC_WEB_APPS_API_TOKEN`, `SONAR_TOKEN`.
 
 ## Cost
 

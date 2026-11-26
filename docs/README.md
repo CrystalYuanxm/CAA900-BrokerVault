@@ -4,7 +4,9 @@
 | File | What it is |
 |---|---|
 | [api.md](api.md) | Every API route and the four tables |
-| [architecture-v1.png](architecture-v1.png) | Architecture as deployed |
+| [architecture-v2.png](architecture-v2.png) ([source .dot](architecture-v2.dot)) | Final architecture |
+| [final/](final/) | Final Project Report (PDF) |
+| [evidence/dr-test-log.md](evidence/dr-test-log.md) | Disaster recovery test log |
 | [adr/](adr/) | Decisions: 0001 Functions on consumption, 0002 built-in sign-in, 0003 Table Storage, 0004 Bicep, 0005 storage key instead of managed identity, 0006 reminders from Maria's mailbox |
 | [runbooks/](runbooks/) | Recovery test, storage key rotation |
 | [tagging-and-naming.md](tagging-and-naming.md) | Names and tags of every resource |
